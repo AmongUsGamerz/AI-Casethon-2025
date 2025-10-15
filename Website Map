@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+
+  <!-- Tailwind (no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet Map + Heatlayer plugin (CDN) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+  <style>
+    html, body { height: 100%; }
+    .radial-bg {
+      background: radial-gradient(1200px 400px at 50% 10%, rgba(94,234,212,0.08), transparent), #0b1220;
+    }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+  <!-- Header / Detected label banner -->
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">This page shows species details after your model labels an image. Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.</p>
+
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+    </div>
+
+    <!-- runtime error banner (hidden by default) -->
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+
+  <!-- Groups + Types + Panel -->
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <!-- Primary animal groups (7 buttons) -->
+    <div id="groups" class="mt-6 flex gap-2 flex-wrap"></div>
+
+    <!-- Secondary: types for the selected group (appears after group click) -->
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+
+    <!-- Friendly fallback for unknown labels (Option B) -->
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+
+    <!-- Active panel (hidden until a specific type is chosen) -->
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <!-- Left: text/info -->
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">Choose a type from the list above to see details.</p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <div class="text-slate-400">Scientific name</div>
+            <div id="panelSci" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Family</div>
+            <div id="panelFamily" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Regions</div>
+            <div id="panelRegions" class="font-medium">—</div>
+          </div>
+          <div>
+            <div class="text-slate-400">Best months</div>
+            <div id="panelMonths" class="font-medium">—</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Right: map -->
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">Heat = high-density observations • Lines = migration routes (filtered by month)</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    // ====== Small polyfills for older browsers ======
+    if (!Array.prototype.flatMap) {
+      // eslint-disable-next-line no-extend-native
+      Array.prototype.flatMap = function(cb, thisArg) {
+        return this.reduce((acc, x, i, arr) => acc.concat(cb.call(thisArg, x, i, arr)), []);
+      };
+    }
+
+    // ====== Error helper ======
+    function showError(msg) {
+      const el = document.getElementById('errBanner');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      console.error(msg);
+    }
+
+    // ====== Unknown label helper (Option B) ======
+    function clearNoData() {
+      const el = document.getElementById('noDataMsg');
+      if (!el) return;
+      el.classList.add('hidden');
+      el.textContent = '';
+    }
+    function setNoData(label) {
+      const el = document.getElementById('noDataMsg');
+      if (!el) return;
+      el.innerHTML = `No data available for <span class="font-semibold">${String(label)}</span>. Try selecting a group above or choose the closest species.`;
+      el.classList.remove('hidden');
+    }
+
+    // Global error capture (helps convert opaque "Script error" into visible text)
+    window.addEventListener('error', (e) => {
+      showError(`Runtime error: ${e && e.message ? e.message : 'Unknown script error'}`);
+    });
+
+    /*
+      ======== HOW TO USE ========
+      1) Replace SAMPLE_DATA with your real dataset. You can keep this schema.
+      2) From your classifier, call window.setDetectedLabel('European Eel') (for example).
+      3) The UI will:
+         - set the banner label
+         - show primary 7 groups
+         - show species cards for the selected group
+         - plot high-density hotspots (heat layer)
+         - plot migration routes (polylines) and filter them by month slider
+    */
+
+    // --- 1) DATA SCHEMA ---
+    const SAMPLE_DATA = {
+      "Crab": {
+        description: "Crab species from the user's table. Hotspot coords are representative centroids; replace with your survey data for accuracy.",
+        types: [
+          { common: "Blue Crab", scientific: "Callinectes sapidus", family: "Portunidae", regions: ["W. Atlantic & Gulf of Mexico", "Chesapeake Bay", "U.S. Mid‑Atlantic", "Gulf coasts"], monthsBest: ["Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"], info: "Females migrate downstream to higher‑salinity mouths to spawn; larvae use tidal/vertical transport.", hotspots: [ [37.2, -76.0, 0.9], [29.7, -91.2, 0.8], [27.8, -82.6, 0.6], [41.7, -70.3, 0.4] ], migrations: [ { name: "Female downstream to estuary mouth (spawn)", months: [7,8,9,10], path: [[38.9,-76.7],[38.3,-76.3],[37.8,-76.2],[37.0,-76.1]] } ] },
+          { common: "Dungeness Crab", scientific: "Metacarcinus magister", family: "Cancridae", regions: ["NE Pacific: Alaska → California", "Puget Sound", "Strait of Georgia", "Outer shelf"], monthsBest: ["Apr","May","Jun","Jul","Aug"], info: "Seasonal inshore/offshore depth shifts; reproduction/molting in spring.", hotspots: [ [47.6, -122.4, 0.8], [49.1, -123.2, 0.7], [44.6, -124.1, 0.6] ], migrations: [ { name: "Inshore (spring) ↔ deeper (summer/fall)", months: [4,5,6,7,8,9,10], path: [[47.8,-122.6],[47.7,-122.7],[47.6,-122.9]] } ] },
+          { common: "Red King Crab", scientific: "Paralithodes camtschaticus", family: "Lithodidae", regions: ["Bering Sea", "Aleutian Islands", "Russian Far East", "Barents (introduced)"], monthsBest: ["Feb","Mar","Apr","May"], info: "Inshore migrations to shallow breeding zones; offshore feeding later.", hotspots: [ [57.0, -170.0, 0.6], [53.9, 158.6, 0.7], [71.0, 33.0, 0.5] ], migrations: [ { name: "Shallow breeding migration", months: [2,3,4,5], path: [[57.5,-170.5],[57.2,-170.2],[57.0,-170.0]] } ] },
+          { common: "Snow Crab", scientific: "Chionoecetes opilio", family: "Oregoniidae", regions: ["N. Atlantic shelves", "Gulf of St. Lawrence", "Newfoundland", "Bering Sea"], monthsBest: ["Feb","Mar","Apr","May"], info: "Larval drift with currents; adults shift depth with temperature/food.", hotspots: [ [49.0, -61.8, 0.7], [50.0, -55.0, 0.6], [58.0, -170.0, 0.6] ], migrations: [ { name: "Depth/latitudinal shifts", months: [3,4,5], path: [[49.2,-62.2],[49.5,-61.9],[49.8,-61.6]] } ] },
+          { common: "Stone Crab", scientific: "Menippe mercenaria", family: "Menippidae", regions: ["FL coasts", "Gulf of Mexico", "Caribbean"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Local movements among reefs/mangroves; limited large‑scale migrations.", hotspots: [ [24.6, -81.8, 0.7], [25.4, -80.1, 0.6], [27.0, -82.6, 0.5] ], migrations: [] },
+          { common: "Pacific Red Rock Crab", scientific: "Cancer productus", family: "Cancridae", regions: ["Pacific NW & California rocky shores"], monthsBest: ["May","Jun","Jul","Aug"], info: "Local/habitat movement; seasonal depth shifts.", hotspots: [ [48.5, -123.1, 0.6], [37.8, -122.5, 0.5] ], migrations: [] },
+          { common: "Atlantic Rock Crab", scientific: "Cancer irroratus", family: "Cancridae", regions: ["Atlantic Canada & NE U.S."], monthsBest: ["May","Jun","Jul","Aug"], info: "Local movements across rocky/gravel substrates.", hotspots: [ [44.5, -63.6, 0.6], [42.4, -70.9, 0.5] ], migrations: [] },
+          { common: "Hermit Crabs (generic)", scientific: "Pagurus spp., Clibanarius spp.", family: "Paguridae/Diogenidae", regions: ["Global shallow coasts", "Reef flats", "Mangroves", "Seagrass"], monthsBest: ["Warm season"], info: "Local foraging & shell exchange; planktonic larvae.", hotspots: [ [18.3, -66.1, 0.5], [13.4, 144.7, 0.5] ], migrations: [] },
+          { common: "Fiddler Crabs", scientific: "Uca spp.", family: "Ocypodidae", regions: ["Tropical/subtropical estuaries & mangroves (global)"], monthsBest: ["Warm/rainy seasons"], info: "Daily tidal migrations; larval export on spring tides.", hotspots: [ [25.3, 55.3, 0.5], [15.3, 74.1, 0.5], [29.7, -81.2, 0.5] ], migrations: [] },
+          { common: "Ghost Crabs", scientific: "Ocypode spp.", family: "Ocypodidae", regions: ["Sandy beaches worldwide (tropics/subtropics)"], monthsBest: ["Spring‑summer"], info: "No large migrations; nightly foraging from burrows; seasonal recruitment.", hotspots: [ [26.1, -80.1, 0.5], [13.1, 80.3, 0.5] ], migrations: [] },
+          { common: "Oyster / Pea Crab", scientific: "Zaops ostreus", family: "Pinnotheridae", regions: ["U.S. Atlantic & Gulf oyster reefs"], monthsBest: ["May","Jun","Jul","Aug"], info: "Commensal in oysters; planktonic larvae settle into hosts.", hotspots: [ [29.4, -94.9, 0.6], [30.2, -90.1, 0.6], [32.0, -81.1, 0.5] ], migrations: [] },
+          { common: "Velvet Crab", scientific: "Necora puber", family: "Portunidae", regions: ["NE Atlantic: British Isles, Celtic/Irish/North Seas"], monthsBest: ["Jun","Jul","Aug","Sep","Oct"], info: "Larval transport by tides; adults more inshore in summer–autumn.", hotspots: [ [50.6, -1.9, 0.6], [52.7, 1.3, 0.5], [54.0, -5.7, 0.5] ], migrations: [] },
+          { common: "Land / Terrestrial Crabs", scientific: "e.g., Gecarcinus quadratus, Cardisoma guanhumi", family: "Gecarcinidae/Cardisomatidae", regions: ["Tropical coastal forests & islands (Caribbean, Central America)"], monthsBest: ["Early rainy season"], info: "Mass migrations to sea for larval release during rainy season (often nocturnal).", hotspots: [ [18.0, -76.8, 0.5], [9.6, -84.2, 0.5] ], migrations: [ { name: "Rain‑onset sea‑ward migration", months: [5,6,7], path: [[9.7,-84.3],[9.6,-84.25],[9.5,-84.2]] } ] },
+          { common: "Chinese Mitten Crab", scientific: "Eriocheir sinensis", family: "Varunidae", regions: ["East Asia coasts", "Invasive: Europe rivers & estuaries", "California occurrences"], monthsBest: ["Mar","Apr","May","Oct","Nov"], info: "Catadromous: juveniles migrate upstream in spring; adults migrate downstream to estuaries in fall for spawning.", hotspots: [ [31.2, 121.5, 0.7], [53.5, 9.9, 0.6], [51.9, 4.5, 0.6], [37.8, -122.3, 0.5] ], migrations: [ { name: "Upstream juveniles", months: [3,4,5], path: [[51.9,4.5],[52.1,4.7],[52.3,4.9]] }, { name: "Downstream adults (spawn)", months: [10,11], path: [[52.3,4.9],[52.1,4.7],[51.9,4.5]] } ] }
+        ]
+      },
+      "Eel": {
+        description: "Example data for eels. Replace with your own.",
+        types: [
+          { common: "European Eel", scientific: "Anguilla anguilla", family: "Anguillidae (freshwater eels)", regions: ["N. Atlantic coasts", "North Sea", "Mediterranean"], monthsBest: ["Apr","May","Jun","Jul","Aug","Sep"], info: "Catadromous: grows in European fresh/brackish waters, spawns in the Sargasso Sea.", hotspots: [ [52.5, 4.9, 0.8], [51.5, -0.1, 0.5], [43.3, 5.4, 0.6], [36.5, -5.3, 0.7] ], migrations: [ { name: "Silver eel spawning migration → Sargasso", months: [10,11,12,1,2], path: [[50.0, -5.0],[46.0, -15.0],[40.0, -30.0],[30.0, -45.0],[27.0, -60.0]] } ] },
+          { common: "Japanese Eel", scientific: "Anguilla japonica", family: "Anguillidae", regions: ["W. Pacific", "Japan", "Korea", "China", "Taiwan"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Catadromous: East Asia rivers/coasts; spawns in W. Philippine Sea.", hotspots: [ [35.7, 139.7, 0.7], [34.7, 135.5, 0.6], [25.0, 121.5, 0.6] ], migrations: [ { name: "Spawning migration → W. Philippine Sea", months: [6,7,8,9], path: [[35.0, 140.0],[29.0, 135.0],[24.0, 130.0],[15.0, 130.0]] } ] },
+          { common: "African Longfin Eel", scientific: "Anguilla mossambica", family: "Anguillidae", regions: ["E. Africa rivers", "W. Indian Ocean"], monthsBest: ["Jan","Feb","Mar","Nov","Dec"], info: "Catadromous along East Africa and Madagascar coasts.", hotspots: [ [-25.9, 32.6, 0.7], [-18.9, 47.5, 0.5], [-20.1, 57.5, 0.5] ], migrations: [ { name: "Oceanic spawning migration", months: [11,12,1,2,3], path: [[-25.0,33.0],[-22.0,40.0],[-18.0,50.0]] } ] },
+          { common: "Giant Mottled Eel", scientific: "Anguilla marmorata", family: "Anguillidae", regions: ["Indo‑Pacific", "East Africa → Polynesia"], monthsBest: ["Mar","Apr","May","Jun","Jul"], info: "Very widespread; large catadromous eel.", hotspots: [ [14.6, 121.0, 0.7], [1.3, 103.8, 0.6], [-6.2, 106.8, 0.6] ], migrations: [ { name: "Oceanic migration", months: [4,5,6], path: [[14.0,120.0],[10.0,125.0],[5.0,130.0]] } ] },
+          { common: "Giant Moray", scientific: "Gymnothorax javanicus", family: "Muraenidae (moray eels)", regions: ["Red Sea", "Indo‑Pacific reefs"], monthsBest: ["Year‑round"], info: "Reef‑associated apex predator.", hotspots: [ [20.5, 39.5, 0.8], [ -8.3, 115.1, 0.6 ], [ -18.3, 147.0, 0.5 ] ], migrations: [] },
+          { common: "Zebra Moray", scientific: "Gymnomuraena zebra", family: "Muraenidae", regions: ["Indo‑Pacific reefs"], monthsBest: ["Year‑round"], info: "Distinct banded pattern; reef crevices.", hotspots: [ [21.3, -157.8, 0.7], [7.1, 134.3, 0.5] ], migrations: [] },
+          { common: "Goldspotted Eel", scientific: "Myrichthys ocellatus", family: "Ophichthidae (snake/worm eels)", regions: ["W. Atlantic", "Caribbean"], monthsBest: ["Apr","May","Jun","Jul","Aug"], info: "Sandy, shallow coastal habitats; burrowing.", hotspots: [ [25.8, -80.1, 0.7], [18.5, -66.1, 0.6], [12.1, -68.9, 0.5] ], migrations: [] },
+          { common: "Pelican Eel", scientific: "Eurypharynx pelecanoides", family: "Eurypharyngidae", regions: ["Tropical & subtropical deep sea"], monthsBest: ["Unknown / deep‑sea"], info: "Bathypelagic; rarely observed; enormous mouth.", hotspots: [ [23.0, -45.0, 0.3], [10.0, -30.0, 0.3] ], migrations: [] }
+        ]
+      },
+      "Flatfish": {
+        description: "Flatfish (order Pleuronectiformes): demersal fishes with strong seasonal inshore/offshore movements in many regions.",
+        types: [
+          { common: "Summer Flounder (Fluke)", scientific: "Paralichthys dentatus", family: "Paralichthyidae", regions: ["U.S. Mid‑Atlantic Bight", "New Jersey–North Carolina shelf"], monthsBest: ["May","Jun","Jul","Aug","Sep","Oct"], info: "Inshore in spring–summer to feed; offshore migration to deeper shelf in fall–winter for spawning.", hotspots: [ [40.1, -73.9, 0.7], [38.9, -74.8, 0.7], [36.9, -75.9, 0.6] ], migrations: [ { name: "Inshore (spring/summer)", months: [5,6,7,8,9,10], path: [[39.8,-74.1],[39.3,-74.6],[38.6,-74.9]] }, { name: "Offshore (late fall/winter)", months: [11,12,1,2,3,4], path: [[38.6,-74.9],[38.2,-75.6],[37.6,-75.9]] } ] },
+          { common: "Winter Flounder", scientific: "Pseudopleuronectes americanus", family: "Pleuronectidae", regions: ["New England", "Gulf of Maine", "Southern Nova Scotia"], monthsBest: ["Jan","Feb","Mar","Apr"], info: "Spawns inshore during late winter–spring in estuaries and bays; limited long‑range migration.", hotspots: [ [42.3, -70.9, 0.7], [41.6, -70.6, 0.6], [43.7, -70.2, 0.6] ], migrations: [] },
+          { common: "Atlantic Halibut", scientific: "Hippoglossus hippoglossus", family: "Pleuronectidae", regions: ["NW Atlantic cold shelf & slope", "Labrador–Gulf of St. Lawrence"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Large flatfish with seasonal depth movements between shelf and slope.", hotspots: [ [47.6, -52.7, 0.6], [44.0, -56.0, 0.5] ], migrations: [ { name: "Shelf ↔ slope seasonal shifts", months: [5,6,7,8,9], path: [[47.6,-52.7],[47.0,-53.5],[46.5,-54.2]] } ] },
+          { common: "Pacific Halibut", scientific: "Hippoglossus stenolepis", family: "Pleuronectidae", regions: ["NE Pacific: Alaska–B.C.–U.S. West Coast"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Adults migrate seasonally and ontogenetically along shelf; spawning in winter in deeper water.", hotspots: [ [59.6, -151.5, 0.7], [54.5, -130.4, 0.6], [57.0, -153.0, 0.6] ], migrations: [ { name: "Summer feeding along shelf", months: [5,6,7,8,9], path: [[59.6,-151.5],[58.5,-150.0],[57.8,-149.0]] } ] },
+          { common: "European Plaice", scientific: "Pleuronectes platessa", family: "Pleuronectidae", regions: ["North Sea", "English Channel", "Skagerrak"], monthsBest: ["Apr","May","Jun","Jul","Aug","Sep"], info: "Feeds in shallow coastal waters spring–summer; offshore to spawn in winter.", hotspots: [ [53.0, 2.0, 0.7], [55.5, 8.0, 0.6], [52.5, 4.0, 0.6] ], migrations: [ { name: "Coastal feeding (spring–summer)", months: [4,5,6,7,8,9], path: [[53.0,2.0],[53.5,3.5],[54.0,5.0]] } ] },
+          { common: "Turbot", scientific: "Scophthalmus maximus", family: "Scophthalmidae", regions: ["NE Atlantic", "North Sea", "Baltic & Black Sea"], monthsBest: ["May","Jun","Jul","Aug"], info: "Coastal to shelf habitats; moves shallower to feed in warm months; spawns spring–summer.", hotspots: [ [51.0, 1.4, 0.6], [44.0, 28.7, 0.6] ], migrations: [] },
+          { common: "Dover Sole (Common Sole)", scientific: "Solea solea", family: "Soleidae", regions: ["English Channel", "Southern North Sea", "Bay of Biscay"], monthsBest: ["Apr","May","Jun","Jul","Aug","Sep"], info: "Inshore feeding during warm months; offshore to spawn in late winter–spring.", hotspots: [ [50.6, -1.9, 0.6], [51.0, 1.4, 0.6], [48.5, -4.5, 0.5] ], migrations: [] },
+          { common: "Yellowtail Flounder", scientific: "Limanda ferruginea", family: "Pleuronectidae", regions: ["NW Atlantic: Georges Bank, Scotian Shelf"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Shelf‑resident with seasonal distribution shifts tied to temperature.", hotspots: [ [42.0, -66.0, 0.6], [45.0, -61.0, 0.6] ], migrations: [] }
+        ]
+      },
+      "Roundfish": {
+        description: "Roundfish: generally round-bodied finfish (e.g., cods, pollock, haddock) with seasonal inshore/offshore movements and latitudinal shifts tied to temperature and spawning.",
+        types: [
+          { common: "Atlantic Cod", scientific: "Gadus morhua", family: "Gadidae", regions: ["NW Atlantic: Gulf of Maine, Georges Bank", "NE Atlantic: North Sea, Barents"], monthsBest: ["Jan","Feb","Mar","Apr","May"], info: "Spawns late winter–spring; seasonal shifts along shelf; forms spawning aggregations.", hotspots: [ [42.0, -67.5, 0.7], [41.4, -66.2, 0.6], [57.0, 2.0, 0.6] ], migrations: [ { name: "Shelf spawning migrations (NW Atlantic)", months: [1,2,3,4,5], path: [[42.6,-67.9],[42.2,-67.1],[41.8,-66.6]] } ] },
+          { common: "Haddock", scientific: "Melanogrammus aeglefinus", family: "Gadidae", regions: ["Georges Bank", "Gulf of Maine", "Iceland–Barents"], monthsBest: ["Mar","Apr","May"], info: "Spawns in spring; distributions shift with temperature and prey.", hotspots: [ [41.8, -66.0, 0.7], [42.2, -65.5, 0.6] ], migrations: [ { name: "Spring spawning drift", months: [3,4,5], path: [[42.2,-65.8],[42.0,-66.2],[41.8,-66.6]] } ] },
+          { common: "Atlantic Pollock (Saithe)", scientific: "Pollachius virens", family: "Gadidae", regions: ["NW Atlantic: Scotian Shelf–Gulf of Maine", "NE Atlantic: Norwegian Sea"], monthsBest: ["May","Jun","Jul","Aug"], info: "Feeds along shelf edges; seasonal inshore/offshore movements.", hotspots: [ [43.5, -62.5, 0.6], [60.0, 2.0, 0.6] ], migrations: [] },
+          { common: "Pacific Cod", scientific: "Gadus macrocephalus", family: "Gadidae", regions: ["NE Pacific: Bering Sea, Gulf of Alaska"], monthsBest: ["Feb","Mar","Apr","May"], info: "Winter–spring spawning near shelf breaks; foraging migrations across shelf.", hotspots: [ [57.5, -157.0, 0.7], [54.5, -160.0, 0.6] ], migrations: [ { name: "Spawning to feeding shift", months: [2,3,4,5], path: [[57.8,-157.5],[57.2,-157.0],[56.8,-156.4]] } ] },
+          { common: "Whiting", scientific: "Merlangius merlangus", family: "Gadidae", regions: ["NE Atlantic: North Sea, Celtic Sea"], monthsBest: ["Apr","May","Jun","Jul"], info: "Coastal to shelf; spring–summer inshore feeding; offshore spawning.", hotspots: [ [55.0, 1.5, 0.6], [51.5, -5.0, 0.6] ], migrations: [] },
+          { common: "Atlantic Redfish (Ocean Perch)", scientific: "Sebastes mentella", family: "Sebastidae", regions: ["NW/NE Atlantic: deep shelf and slope"], monthsBest: ["Jun","Jul","Aug"], info: "Deepwater schooling; seasonal vertical and horizontal shifts.", hotspots: [ [62.0, -20.0, 0.6], [56.0, -30.0, 0.6] ], migrations: [] },
+          { common: "Monkfish (Angler)", scientific: "Lophius americanus", family: "Lophiidae", regions: ["NW Atlantic: Mid‑Atlantic Bight to Gulf of Maine"], monthsBest: ["May","Jun","Jul","Aug","Sep"], info: "Benthic ambush predator; seasonal along-shelf movements; spawns pelagic egg veils in spring–summer.", hotspots: [ [40.5, -72.0, 0.6], [42.0, -68.0, 0.6] ], migrations: [] }
+        ]
+      },
+      "Scallop": { description: "Scallop group (placeholder)", types: [] },
+      "Skate": { description: "Skate group (placeholder)", types: [] },
+      "Whelk": { description: "Whelk group (placeholder)", types: [] }
+    };
+
+    // Helper: month number → short label
+    const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+    // --- 2) STATE + SAFETY ---
+    let map = null, heatLayer = null, routeGroup = null;
+    let mapReady = false;
+    let activeAnimal = null;   // which top-level group is selected
+    let activeIndex = null;    // which type/species is selected within the group
+    let __uiReady = false;     // set true after init finishes
+    let __queuedLabel = null;  // if setDetectedLabel is called too early, we apply it after ready
+
+    // --- 2a) Coords sanitizers ---
+    function isValidLatLng(p) {
+      if (!Array.isArray(p) || p.length < 2) return false;
+      const lat = Number(p[0]); const lng = Number(p[1]);
+      return Number.isFinite(lat) && Number.isFinite(lng) && lat <= 90 && lat >= -90 && lng <= 180 && lng >= -180;
+    }
+    function sanitizePoints(arr) {
+      return (Array.isArray(arr) ? arr.filter(isValidLatLng) : []);
+    }
+
+    // --- 3) MAP (lazy init so we never init inside a hidden container) ---
+    function ensureMap() {
+      if (mapReady) return true;
+      try {
+        if (typeof L === 'undefined') {
+          showError('Map library failed to load. Check network/CSP. Map will be disabled.');
+          return false;
+        }
+        // make sure panel (and #map) is visible before init for proper canvas sizing
+        const panel = document.getElementById('panel');
+        if (panel && panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          panel.dataset.__tempReveal = '1';
+        }
+        map = L.map('map', { zoomControl: true, attributionControl: false }).setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 6 }).addTo(map);
+        if (L.heatLayer) {
+          heatLayer = L.heatLayer([], { radius: 20, blur: 15, maxZoom: 6 }).addTo(map);
+        } else {
+          showError('Heatmap plugin not available; density layer disabled.');
+        }
+        routeGroup = L.layerGroup().addTo(map);
+        mapReady = true;
+        // if we temporarily revealed the panel, hide it again until a species is selected
+        if (panel && panel.dataset.__tempReveal === '1') {
+          panel.classList.add('hidden');
+          delete panel.dataset.__tempReveal;
+        }
+        return true;
+      } catch (err) {
+        showError('Map init error: ' + err.message);
+        mapReady = false;
+        return false;
+      }
+    }
+
+    // --- 4) UI BUILDERS ---
+    function buildGroupButtons() {
+      const groupsEl = document.getElementById('groups');
+      if (!groupsEl) return;
+      groupsEl.innerHTML = '';
+      const ORDER = ['Crab','Eel','Flatfish','Roundfish','Scallop','Skate','Whelk'];
+      ORDER.forEach(name => {
+        const btn = document.createElement('button');
+        const isActive = activeAnimal === name;
+        btn.className = `px-3 py-2 rounded-full text-sm font-semibold border ${isActive ? 'bg-teal-500 text-black border-teal-400' : 'bg-slate-800/70 border-slate-700 hover:bg-slate-700'}`;
+        btn.textContent = name;
+        btn.onclick = () => {
+          activeAnimal = name in SAMPLE_DATA ? name : null;
+          activeIndex = null; // clear selection until a type is chosen
+          const panel = document.getElementById('panel');
+          if (panel) panel.classList.add('hidden');
+          clearNoData();
+          buildTypeGallery();
+          buildGroupButtons();
+        };
+        groupsEl.appendChild(btn);
+      });
+    }
+
+    function buildTypeGallery() {
+      const gal = document.getElementById('typeGallery');
+      if (!gal) return;
+      gal.innerHTML = '';
+      if (!activeAnimal || !(activeAnimal in SAMPLE_DATA)) return;
+      const types = (SAMPLE_DATA[activeAnimal] && Array.isArray(SAMPLE_DATA[activeAnimal].types)) ? SAMPLE_DATA[activeAnimal].types : [];
+      if (!types.length) {
+        gal.innerHTML = `<div class=\"text-slate-300\">No species loaded for <span class=\"font-semibold\">${activeAnimal}</span> yet.</div>`;
+        return;
+      }
+      types.forEach((t, i) => {
+        const card = document.createElement('button');
+        card.className = 'text-left bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-3 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-400';
+        const sci = t && t.scientific ? t.scientific : '';
+        const regs = (t && Array.isArray(t.regions)) ? t.regions.join(', ') : '';
+        card.innerHTML = `
+          <div class=\"text-base font-semibold\">${t && t.common ? t.common : '—'}</div>
+          <div class=\"text-xs text-slate-400 mt-1\">${sci}</div>
+          <div class=\"text-xs text-slate-400 mt-1\">${regs}</div>
+        `;
+        card.onclick = () => { activeIndex = i; clearNoData(); renderPanel(); };
+        gal.appendChild(card);
+      });
+    }
+
+    function renderPanel() {
+      const panel = document.getElementById('panel');
+      const monthInputEl = document.getElementById('monthInput');
+      if (!panel || !monthInputEl) return;
+
+      // Guard: must have a selected group + valid type index
+      if (activeAnimal == null || activeIndex == null || !(activeAnimal in SAMPLE_DATA)) {
+        panel.classList.add('hidden');
+        return;
+      }
+
+      const group = SAMPLE_DATA[activeAnimal];
+      const types = (group && Array.isArray(group.types)) ? group.types : [];
+      const t = (Number.isInteger(activeIndex) && activeIndex >= 0 && activeIndex < types.length) ? types[activeIndex] : null;
+      if (!t) {
+        panel.classList.add('hidden');
+        return;
+      }
+
+      panel.classList.remove('hidden');
+      const monthVal = Number(monthInputEl.value || 1);
+
+      // Text fields (defensive fallbacks)
+      const titleEl = document.getElementById('panelTitle');
+      const descEl = document.getElementById('panelDesc');
+      const sciEl = document.getElementById('panelSci');
+      const famEl = document.getElementById('panelFamily');
+      const regEl = document.getElementById('panelRegions');
+      const monEl = document.getElementById('panelMonths');
+      if (titleEl) titleEl.textContent = t.common || '—';
+      if (descEl) descEl.textContent = t.info || '';
+      if (sciEl) sciEl.textContent = t.scientific || '—';
+      if (famEl) famEl.textContent = t.family || '—';
+      if (regEl) regEl.textContent = Array.isArray(t.regions) ? t.regions.join(', ') : '—';
+      if (monEl) monEl.textContent = Array.isArray(t.monthsBest) ? t.monthsBest.join(' • ') : '—';
+
+      // Ensure map exists only when panel is visible
+      if (!ensureMap()) return;
+
+      try {
+        // Map layers
+        const heatDataRaw = Array.isArray(t.hotspots) ? t.hotspots.map(h => [h[0], h[1], h[2] || 0.5]) : [];
+        const heatData = sanitizePoints(heatDataRaw).map(([la,ln,wt]) => [la,ln,wt]);
+        if (heatLayer && typeof heatLayer.setLatLngs === 'function') {
+          heatLayer.setLatLngs(heatData);
+        }
+
+        if (routeGroup && typeof routeGroup.clearLayers === 'function' && typeof L !== 'undefined') {
+          routeGroup.clearLayers();
+          (Array.isArray(t.migrations) ? t.migrations : []).forEach(r => {
+            if (!r || !Array.isArray(r.path)) return;
+            if (!r.months || r.months.includes(monthVal)) {
+              const path = sanitizePoints(r.path);
+              if (path.length && L.polyline) {
+                L.polyline(path, { weight: 3, opacity: 0.9 }).addTo(routeGroup).bindTooltip(r.name || 'migration');
+              }
+            }
+          });
+        }
+
+        // Compute bounds safely
+        const ptsA = heatData.map(h => [h[0], h[1]]);
+        const migPts = (Array.isArray(t.migrations) ? t.migrations : []).flatMap(r => Array.isArray(r.path) ? sanitizePoints(r.path) : []);
+        const allPts = sanitizePoints(ptsA.concat(migPts));
+        if (allPts.length && typeof L !== 'undefined' && L.latLngBounds) {
+          const bounds = L.latLngBounds(allPts);
+          map.fitBounds(bounds.pad(0.2));
+        } else {
+          map.setView([20,0], 2);
+        }
+
+        // Fix tile sizing after becoming visible
+        setTimeout(() => { if (map && map.invalidateSize) map.invalidateSize(); }, 50);
+      } catch (err) {
+        showError('Map render error: ' + err.message);
+      }
+    }
+
+    function setMonthLabel(val) {
+      const i = Math.min(Math.max(1, Number(val || 1)), 12) - 1;
+      const lbl = document.getElementById('monthLabel');
+      if (lbl) lbl.textContent = MONTHS[i];
+    }
+
+    // --- 5) PUBLIC API (safe even if called before load) ---
+    window.setDetectedLabel = function(label) {
+      try {
+        if (!__uiReady) { __queuedLabel = label; return; }
+
+        const banner = document.getElementById('detectedLabel');
+        if (banner) banner.textContent = label || '—';
+
+        clearNoData();
+
+        // Find matching species by common name
+        let found = null;
+        for (const [animal, data] of Object.entries(SAMPLE_DATA)) {
+          const idx = (data && Array.isArray(data.types)) ? data.types.findIndex(t => t && typeof t.common === 'string' && t.common.toLowerCase() === String(label||'').toLowerCase()) : -1;
+          if (idx >= 0) { found = { animal, idx }; break; }
+        }
+
+        if (found) {
+          activeAnimal = found.animal;
+          activeIndex = found.idx;
+        } else {
+          // Option B: show friendly fallback, keep gallery, keep panel hidden
+          setNoData(label);
+          activeIndex = null;
+          if (!activeAnimal) activeAnimal = 'Crab';
+        }
+
+        buildGroupButtons();
+        buildTypeGallery();
+        renderPanel();
+      } catch (err) {
+        showError('setDetectedLabel error: ' + err.message);
+      }
+    }
+
+    window.setActiveGroup = function(name) {
+      try {
+        if (!__uiReady) { __queuedLabel = null; }
+        activeAnimal = (name in SAMPLE_DATA) ? name : null;
+        activeIndex = null;
+        clearNoData();
+        buildGroupButtons();
+        buildTypeGallery();
+        const panel = document.getElementById('panel');
+        if (panel) panel.classList.add('hidden');
+      } catch (err) {
+        showError('setActiveGroup error: ' + err.message);
+      }
+    }
+
+    // --- 6) INIT (run after DOM ready) ---
+    window.addEventListener('load', () => {
+      try {
+        // Do NOT init map here; we lazily init when panel first opens.
+        activeAnimal = 'Crab';
+        buildGroupButtons();
+        buildTypeGallery();
+
+        // Month slider wiring
+        const monthInput = document.getElementById('monthInput');
+        setMonthLabel(monthInput ? monthInput.value : 1);
+        if (monthInput) {
+          monthInput.addEventListener('input', (e) => {
+            setMonthLabel(e.target.value);
+            if (activeIndex != null) renderPanel();
+          });
+        }
+
+        __uiReady = true;
+        if (__queuedLabel) { const q = __queuedLabel; __queuedLabel = null; window.setDetectedLabel(q); }
+
+        // --- 7) TESTS (console-only) ---
+        console.group('%cSelf-tests','color:#10b981');
+        // Test 1: setMonthLabel bounds and mapping
+        setMonthLabel(1); console.assert(document.getElementById('monthLabel').textContent === 'Jan', 'Month label Jan failed');
+        setMonthLabel(12); console.assert(document.getElementById('monthLabel').textContent === 'Dec', 'Month label Dec failed');
+
+        // Test 2: gallery populates for default group
+        const initialCards = document.querySelectorAll('#typeGallery button').length;
+        console.assert(initialCards > 0, 'Type gallery should have cards for Crab');
+
+        // Test 3: setActiveGroup('Eel') sets up eel gallery
+        window.setActiveGroup('Eel');
+        const eelCards = Array.from(document.querySelectorAll('#typeGallery button')).map(e=>e.textContent.trim());
+        console.assert(eelCards.includes('European Eel'), 'Eel gallery should include European Eel');
+
+        // Test 4: setDetectedLabel('European Eel') selects species and opens panel (lazy map init)
+        window.setDetectedLabel('European Eel');
+        const title = document.getElementById('panelTitle').textContent;
+        console.assert(title === 'European Eel', 'Panel title should be European Eel');
+        console.assert(!document.getElementById('panel').classList.contains('hidden'), 'Panel should be visible after selecting a species');
+        console.assert(window.mapReady === true, 'Map should be initialized after opening panel');
+
+        // Test 5: Unknown species should NOT crash and should keep panel hidden
+        window.setDetectedLabel('Totally Unknown Creature');
+        console.assert(document.getElementById('panel').classList.contains('hidden') === true, 'Panel remains hidden for unknown labels');
+
+        // Test 8 (new): Unknown species shows friendly fallback message
+        const msg = document.getElementById('noDataMsg');
+        console.assert(msg && !msg.classList.contains('hidden') && /No data available for/.test(msg.textContent), 'No-data message should be visible for unknown labels');
+
+        // Test 6: Species with no migrations should not crash map render
+        window.setActiveGroup('Crab');
+        const crabCards = Array.from(document.querySelectorAll('#typeGallery button'));
+        const stoneIdx = crabCards.findIndex(b => /Stone Crab/.test(b.textContent));
+        if (stoneIdx >= 0) { crabCards[stoneIdx].click(); }
+        console.assert(document.getElementById('panelTitle').textContent.includes('Stone Crab'), 'Stone Crab panel should open');
+
+        // Test 7: Pelican Eel (sparse hotspots) still renders
+        window.setActiveGroup('Eel');
+        const eelButtons = Array.from(document.querySelectorAll('#typeGallery button'));
+        const pelicanIdx = eelButtons.findIndex(b => /Pelican Eel/.test(b.textContent));
+        if (pelicanIdx >= 0) { eelButtons[pelicanIdx].click(); }
+        console.assert(document.getElementById('panelTitle').textContent.includes('Pelican Eel'), 'Pelican Eel panel should open without errors');
+
+        // Additional Tests for Flatfish
+        window.setActiveGroup('Flatfish');
+        const flatCards = Array.from(document.querySelectorAll('#typeGallery button')).map(e=>e.textContent.trim());
+        console.assert(flatCards.includes('Summer Flounder (Fluke)'), 'Flatfish gallery should include Summer Flounder (Fluke)');
+        const flukeIdx = Array.from(document.querySelectorAll('#typeGallery button')).findIndex(b => /Summer Flounder/.test(b.textContent));
+        if (flukeIdx >= 0) { document.querySelectorAll('#typeGallery button')[flukeIdx].click(); }
+        console.assert(document.getElementById('panelTitle').textContent.includes('Summer Flounder'), 'Summer Flounder panel should open');
+
+        // Additional Tests for Roundfish
+        window.setActiveGroup('Roundfish');
+        const roundCards = Array.from(document.querySelectorAll('#typeGallery button')).map(e=>e.textContent.trim());
+        console.assert(roundCards.includes('Atlantic Cod'), 'Roundfish gallery should include Atlantic Cod');
+        const codIdx = Array.from(document.querySelectorAll('#typeGallery button')).findIndex(b => /Atlantic Cod/.test(b.textContent));
+        if (codIdx >= 0) { document.querySelectorAll('#typeGallery button')[codIdx].click(); }
+        console.assert(document.getElementById('panelTitle').textContent.includes('Atlantic Cod'), 'Atlantic Cod panel should open');
+        console.assert(window.mapReady === true, 'Map should still be initialized after opening Atlantic Cod');
+
+        console.groupEnd();
+      } catch (e) {
+        showError('Init error: ' + (e && e.message ? e.message : e));
+      }
+    });
+  </script>
+</body>
+</html>
