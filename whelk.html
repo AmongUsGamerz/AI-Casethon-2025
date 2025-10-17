@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+
+  <!-- Navbar (identical to index.html) -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: Logo + Site Name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;"
+      />
+      <span class="font-semibold tracking-tight text-white">Marine Science AI</span>
+    </div>
+
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="index.html#features" class="hover:text-white">Features</a>
+      <a href="index.html#datasets" class="hover:text-white">Datasets</a>
+      <a href="index.html#demo" class="hover:text-white">Demo</a>
+      <a href="index.html#ar" class="hover:text-white">AR</a>
+      <a href="index.html#faq" class="hover:text-white">FAQ</a>
+      <a href="crab.html" class="hover:text-white">Species Maps</a>
+    </nav>
+
+    <!-- Right: contact button -->
+    <a href="index.html#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">
+      This page shows species details after your model labels an image.
+      Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.
+    </p>
+
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+      <div class="mt-3 text-xs text-slate-300 flex items-center gap-3">
+        <span class="uppercase tracking-wide text-slate-400">Data source</span>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcSample" type="radio" name="datasrc" class="accent-teal-400" checked>
+          <span>Sample</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcFathomNet" type="radio" name="datasrc" class="accent-teal-400">
+          <span>FathomNet (live)</span>
+        </label>
+        <span id="srcStatus" class="ml-2 text-[11px] text-slate-400"></span>
+      </div>
+    </div>
+
+    <nav class="max-w-6xl mx-auto mt-6 flex gap-2 flex-wrap">
+      <a href="crab.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Crab</a>
+      <a href="eel.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Eel</a>
+      <a href="flatfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Flatfish</a>
+      <a href="roundfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Roundfish</a>
+      <a href="scallop.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Scallop</a>
+      <a href="skate.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Skate</a>
+      <a href="whelk.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-teal-500 text-black border-teal-400">Whelk</a>
+    </nav>
+
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">
+          Whelks (families Buccinidae & Busyconidae): predatory marine snails on sandy, muddy, or shell-hash bottoms.
+          Adults show local/seasonal movements; dispersal mainly via planktonic larvae and currents.
+        </p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div><div class="text-slate-400">Scientific name</div><div id="panelSci" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Family</div><div id="panelFamily" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Regions</div><div id="panelRegions" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Best months</div><div id="panelMonths" class="font-medium">—</div></div>
+        </div>
+      </article>
+
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">
+          Heat = high-density observations • Lines = larval drift or seasonal adult shifts (filtered by month)
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Data object consumed by assets/app.js -->
+  <script>
+    window.SPECIES_NAME = "Whelk";
+    window.SPECIES_DATA = {
+      "description": "Major whelk species with example hotspots and typical larval/adult seasonal movements.",
+      "types": [
+        {
+          "common": "Knobbed Whelk",
+          "scientific": "Busycon carica",
+          "fathomnetConcept": "Busycon carica",
+          "family": "Busyconidae",
+          "regions": ["W. Atlantic: Cape Cod–N Florida (shelf & inlets)"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep","Oct"],
+          "info": "Common on sandy bottoms and inlets; egg cases raft or roll along shore.",
+          "hotspots": [[39.2,-74.6,0.7],[36.8,-75.9,0.6],[32.0,-80.7,0.5]],
+          "migrations": [
+            {"name":"Warm-season inshore shift","months":[5,6,7,8,9],"path":[[39.2,-74.6],[38.9,-74.5],[38.5,-74.7]]}
+          ]
+        },
+        {
+          "common": "Channeled Whelk",
+          "scientific": "Busycotypus canaliculatus",
+          "fathomnetConcept": "Busycotypus canaliculatus",
+          "family": "Busyconidae",
+          "regions": ["NW Atlantic: New England–Mid-Atlantic shelf"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Prefers sandy/shell hash; targeted by pot fisheries in New England.",
+          "hotspots": [[41.7,-70.0,0.7],[41.2,-71.6,0.6],[40.1,-73.9,0.6]],
+          "migrations": []
+        },
+        {
+          "common": "Lightning Whelk",
+          "scientific": "Busycon sinistrum",
+          "fathomnetConcept": "Busycon sinistrum",
+          "family": "Busyconidae",
+          "regions": ["Gulf of Mexico & SE US"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug","Sep"],
+          "info": "Left-handed shell; shallow bays and nearshore Gulf beaches.",
+          "hotspots": [[29.2,-90.1,0.7],[27.7,-82.7,0.6],[29.7,-85.4,0.5]],
+          "migrations": [
+            {"name":"Spring egg-case transport alongshore","months":[4,5,6],"path":[[27.7,-82.7],[27.5,-83.2],[27.2,-83.8]]}
+          ]
+        },
+        {
+          "common": "Common Whelk",
+          "scientific": "Buccinum undatum",
+          "fathomnetConcept": "Buccinum undatum",
+          "family": "Buccinidae",
+          "regions": ["NE Atlantic: North Sea, Irish Sea, Norwegian Sea"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug","Sep"],
+          "info": "Cold-temperate shelf species; important pot fishery in the UK.",
+          "hotspots": [[55.0,1.5,0.7],[53.5,-3.2,0.6],[60.0,0.0,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Red Whelk",
+          "scientific": "Neptunea antiqua",
+          "fathomnetConcept": "Neptunea antiqua",
+          "family": "Buccinidae",
+          "regions": ["NE Atlantic: Celtic Sea–Norwegian coast"],
+          "monthsBest": ["May","Jun","Jul","Aug"],
+          "info": "Deeper/colder waters; scavenger and predator on bivalves.",
+          "hotspots": [[56.5,-5.5,0.6],[52.5,-6.0,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Japanese Neptune Whelk",
+          "scientific": "Neptunea arthritica",
+          "fathomnetConcept": "Neptunea arthritica",
+          "family": "Buccinidae",
+          "regions": ["NW Pacific: Hokkaido, Sea of Japan, Okhotsk"],
+          "monthsBest": ["May","Jun","Jul","Aug"],
+          "info": "Cold-water shelf species; valued fishery in northern Japan.",
+          "hotspots": [[43.5,145.0,0.7],[41.8,140.8,0.6],[45.0,144.0,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Rapa Whelk (invasive)",
+          "scientific": "Rapana venosa",
+          "fathomnetConcept": "Rapana venosa",
+          "family": "Muricidae (whelk-like)",
+          "regions": ["Native: NW Pacific • Invasive: Black Sea, Mediterranean, Chesapeake Bay"],
+          "monthsBest": ["Jun","Jul","Aug","Sep"],
+          "info": "Large predatory snail; significant bivalve predator in invaded estuaries.",
+          "hotspots": [[44.6,33.5,0.6],[41.3,29.0,0.5],[37.0,-76.3,0.6]],
+          "migrations": [
+            {"name":"Estuarine larval export/retention","months":[6,7,8,9],"path":[[37.0,-76.3],[37.1,-76.0],[37.2,-75.8]]}
+          ]
+        },
+        {
+          "common": "Pear Whelk",
+          "scientific": "Fulguropsis spirata",
+          "fathomnetConcept": "Fulguropsis spirata",
+          "family": "Busyconidae",
+          "regions": ["Gulf of Mexico: Texas–Mexico"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug"],
+          "info": "Shallow sandy bottoms; often after storms on beaches.",
+          "hotspots": [[27.8,-97.1,0.6],[25.9,-97.1,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Northern Whelk (Brown-lip)",
+          "scientific": "Neptunea despecta",
+          "fathomnetConcept": "Neptunea despecta",
+          "family": "Buccinidae",
+          "regions": ["Barents & Norwegian Seas, N Atlantic slope"],
+          "monthsBest": ["Jun","Jul","Aug"],
+          "info": "Deeper, colder waters; slow-moving scavenger.",
+          "hotspots": [[70.0,20.0,0.5],[66.0,8.0,0.5]],
+          "migrations": []
+        }
+      ]
+    };
+  </script>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

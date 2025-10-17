@@ -11,80 +11,84 @@
   <!-- model-viewer web component (for AR/3D) -->
   <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
-  <style>
-    /* Minor tweaks for nicer backgrounds */
-    .radial-bg {
-      background:
-        radial-gradient(1200px 400px at 50% 10%, rgba(94,234,212,0.08), transparent),
-        #0b1220;
-    }
-    .shadow-soft { box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
-    .tabular-nums { font-variant-numeric: tabular-nums; }
-  </style>
+  <!-- Site styles -->
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
-  <!-- Header -->
-  <header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <div class="h-8 w-8 rounded-xl bg-cyan-400/20 ring-1 ring-cyan-400/50 grid place-items-center">
-          <span class="text-cyan-300 text-sm font-bold">AI</span>
-        </div>
-        <span class="font-semibold tracking-tight">Marine Science AI</span>
-      </div>
-      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
-        <a href="#features" class="hover:text-white">Features</a>
-        <a href="#datasets" class="hover:text-white">Datasets</a>
-        <a href="#demo" class="hover:text-white">Demo</a>
-        <a href="#ar" class="hover:text-white">AR</a>
-        <a href="#faq" class="hover:text-white">FAQ</a>
-      </nav>
-      <a href="#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">Contact</a>
+<!-- Header -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: logo + site name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;" 
+      />
+      <span class="font-semibold tracking-tight text-white">Marine Science AI</span>
     </div>
-  </header>
 
-  <!-- Hero -->
-  <section class="relative overflow-hidden">
-    <div class="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
-    <div class="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl"></div>
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
-      <div>
-        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
-          AI for Benthic Species ID
-        </h1>
-        <p class="mt-4 text-slate-300 max-w-prose">
-          Open-source tooling to classify and detect benthic organisms in underwater imagery.
-          Built for hackathons, labs, and field teams who need fast, reliable triage.
-        </p>
-        <div class="mt-6 flex flex-wrap items-center gap-3">
-          <a href="#demo" class="rounded-2xl bg-cyan-500 px-5 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">Try the Demo</a>
-          <a href="#features" class="rounded-2xl border border-slate-700 px-5 py-2.5 font-medium hover:border-slate-500">Explore Features</a>
-        </div>
-        <div class="mt-6 text-xs text-slate-400">
-          Tasks: Classification (7 species) · Detection (multi-object) · Offline-ready
-        </div>
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="#features" class="hover:text-white">Features</a>
+      <a href="#datasets" class="hover:text-white">Datasets</a>
+      <a href="#demo" class="hover:text-white">Demo</a>
+      <a href="#ar" class="hover:text-white">AR</a>
+      <a href="#faq" class="hover:text-white">FAQ</a>
+      <a href="crab.html" class="hover:text-white">Species Maps</a>
+    </nav>
+
+    <!-- Right: contact button -->
+    <a href="#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+
+</header>
+
+
+<!-- Hero -->
+<section class="relative overflow-hidden">
+  <div class="absolute -top-40 -right-40 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl"></div>
+  <div class="absolute -bottom-40 -left-40 h-[30rem] w-[30rem] rounded-full bg-blue-500/10 blur-3xl"></div>
+
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+    <!-- Left text -->
+    <div>
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">
+        AI for Benthic Species ID
+      </h1>
+      <p class="mt-4 text-slate-300 max-w-prose">
+        Open-source tooling to classify and detect benthic organisms in underwater imagery.
+        Built for hackathons, labs, and field teams who need fast, reliable triage.
+      </p>
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <a href="#demo" class="rounded-2xl bg-cyan-500 px-5 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">Try the Demo</a>
+        <a href="#features" class="rounded-2xl border border-slate-700 px-5 py-2.5 font-medium hover:border-slate-500">Explore Features</a>
+        <a href="crab.html" class="rounded-2xl border border-cyan-500/50 px-5 py-2.5 font-medium text-cyan-300 hover:bg-cyan-500/10">Open Species Maps</a>
       </div>
-      <div class="relative">
-        <div class="aspect-[4/3] w-full overflow-hidden rounded-3xl border border-slate-800 shadow-2xl">
-          <img
-            alt="Underwater scene"
-            class="h-full w-full object-cover"
-            src="https://images.unsplash.com/photo-1500479694472-551d1fb6258d?q=80&w=1600&auto=format&fit=crop"
-          />
-        </div>
-        <div class="absolute -bottom-5 -right-5 bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-700 px-4 py-3 shadow-xl">
-          <div class="text-xs text-slate-400">Live inference (demo)</div>
-          <div class="text-sm">Scallop · Crab · Skate · Flatfish · Roundfish · Whelk · Eel</div>
-        </div>
+      <div class="mt-6 text-xs text-slate-400">
+        Tasks: Classification (7 species) · Detection (multi-object) · Offline-ready
       </div>
     </div>
-  </section>
+
+    <!-- Right logo (clean, centered, no box) -->
+    <div class="flex items-center justify-center">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="w-[480px] max-w-full object-contain"
+      />
+    </div>
+  </div>
+</section>
 
   <!-- Features -->
   <section id="features" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
     <h2 class="text-2xl md:text-3xl font-bold">Features</h2>
     <div class="mt-8 grid gap-6 md:grid-cols-3">
-      <!-- 6 feature cards -->
       <div class="rounded-2xl border border-slate-800 p-6 bg-gradient-to-b from-slate-900/40 to-slate-900">
         <div class="text-cyan-300 text-sm font-semibold">Image Classification</div>
         <p class="mt-2 text-sm text-slate-300">Predict one of 7 species from a single frame with confidence scores.</p>
@@ -132,7 +136,7 @@
     </div>
   </section>
 
-  <!-- Demo + AI Description -->
+  <!-- Demo + Bridge -->
   <section id="demo" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
     <div class="rounded-3xl border border-slate-800 p-6 md:p-8 bg-slate-900/50">
       <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -146,21 +150,17 @@
       </div>
 
       <div id="demo-grid" class="mt-6 grid lg:grid-cols-3 md:grid-cols-2 gap-6 hidden">
-        <!-- Image Preview -->
         <div class="rounded-2xl overflow-hidden border border-slate-800">
           <img id="img-preview" alt="Preview" class="w-full h-full object-cover" />
         </div>
-
-        <!-- Predictions -->
         <div class="rounded-2xl border border-slate-800 p-4">
           <div class="text-sm text-slate-400">Selected file</div>
           <div id="file-name" class="text-sm font-medium">—</div>
           <div class="mt-4 text-sm text-slate-300">Run on-device model to get species probabilities.</div>
           <div id="pred-list" class="mt-4 grid grid-cols-2 gap-3 text-xs"></div>
           <button id="btn-analyze" class="mt-4 rounded-2xl bg-cyan-500 px-4 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">Analyze</button>
+          <button id="btn-view-map" disabled class="mt-2 rounded-2xl border border-cyan-500/40 px-4 py-2 text-sm text-cyan-300 disabled:opacity-40">View Top Species on Map</button>
         </div>
-
-        <!-- AI Description -->
         <div class="rounded-2xl border border-slate-800 p-4 flex flex-col">
           <div class="text-sm text-slate-400">AI Description</div>
           <p id="ai-text" class="mt-2 text-sm text-slate-300 min-h-[4rem] whitespace-pre-wrap">
@@ -173,15 +173,21 @@
         </div>
       </div>
 
-      <!-- Dev self-tests -->
       <details class="mt-6 rounded-xl border border-slate-800 p-4">
         <summary class="cursor-pointer list-none">
           <div class="flex items-center justify-between">
-            <span class="font-medium text-slate-200">Developer: Self-tests</span>
+            <span class="font-medium text-slate-200">Developer: Quick Open Species</span>
             <span class="text-slate-500">▾</span>
           </div>
         </summary>
-        <ul id="test-results" class="mt-3 text-sm"></ul>
+        <div class="mt-3 flex flex-wrap gap-2 text-sm">
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('Blue Crab')">Blue Crab</button>
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('Dungeness Crab')">Dungeness Crab</button>
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('European Eel')">European Eel</button>
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('Japanese Eel')">Japanese Eel</button>
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('Summer Flounder (Fluke)')">Summer Flounder</button>
+          <button class="rounded-xl border border-slate-700 px-3 py-1.5" onclick="goToSpecies('Atlantic Cod')">Atlantic Cod</button>
+        </div>
       </details>
     </div>
   </section>
@@ -193,109 +199,69 @@
         <h2 class="text-2xl md:text-3xl font-bold">AR Lab — 3D Marine Species</h2>
         <div class="text-xs text-slate-400">Tip: On iOS tap <span class="font-semibold">AR</span> to place in your room. On Android use Scene Viewer.</div>
       </div>
-
       <div class="mt-6 grid md:grid-cols-2 gap-6 items-start">
-        <!-- 3D viewer -->
         <div class="rounded-2xl border border-slate-800 overflow-hidden">
           <model-viewer
             id="mv"
             src="https://modelviewer.dev/shared-assets/models/RobotExpressive.glb"
             ios-src="https://modelviewer.dev/shared-assets/models/RobotExpressive.usdz"
-            ar
-            ar-modes="webxr scene-viewer quick-look"
-            camera-controls
-            auto-rotate
-            shadow-intensity="1"
-            exposure="1"
-            class="w-full"
-            style="width:100%;height:420px"
-          >
+            ar ar-modes="webxr scene-viewer quick-look"
+            camera-controls auto-rotate shadow-intensity="1" exposure="1"
+            class="w-full" style="width:100%;height:420px">
             <button slot="ar-button" class="m-3 rounded-2xl bg-cyan-500 px-4 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">View in AR</button>
           </model-viewer>
         </div>
-
-        <!-- Info panel -->
         <div class="rounded-2xl border border-slate-800 p-4">
           <div class="text-sm text-slate-400">Selected species</div>
           <div id="mv-species-name" class="text-xl font-semibold">Scallop</div>
           <p id="mv-species-blurb" class="mt-2 text-sm text-slate-300">Bivalve mollusk found on sandy/gravel seabeds; fan-shaped shell with radiating ribs.</p>
-
           <div class="mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div class="rounded-xl border border-slate-800 p-3">
-              <div class="text-slate-400">Typical habitat</div>
-              <div>Sandy/soft bottoms, 20–120 m</div>
-            </div>
-            <div class="rounded-xl border border-slate-800 p-3">
-              <div class="text-slate-400">Size</div>
-              <div>~10–80 cm depending on species</div>
-            </div>
-            <div class="rounded-xl border border-slate-800 p-3">
-              <div class="text-slate-400">ID cues</div>
-              <div>Silhouette, shell/ray patterning, appendages</div>
-            </div>
-            <div class="rounded-xl border border-slate-800 p-3">
-              <div class="text-slate-400">IUCN</div>
-              <div>Varies by species</div>
-            </div>
+            <div class="rounded-xl border border-slate-800 p-3"><div class="text-slate-400">Typical habitat</div><div>Sandy/soft bottoms, 20–120 m</div></div>
+            <div class="rounded-xl border border-slate-800 p-3"><div class="text-slate-400">Size</div><div>~10–80 cm depending on species</div></div>
+            <div class="rounded-xl border border-slate-800 p-3"><div class="text-slate-400">ID cues</div><div>Silhouette, shell/ray patterning, appendages</div></div>
+            <div class="rounded-xl border border-slate-800 p-3"><div class="text-slate-400">IUCN</div><div>Varies by species</div></div>
           </div>
-
           <div class="mt-5">
             <div class="text-sm text-slate-400 mb-2">Choose a species</div>
-            <div id="mv-chooser" class="flex flex-wrap gap-2">
-              <!-- buttons inserted by JS -->
-            </div>
+            <div id="mv-chooser" class="flex flex-wrap gap-2"></div>
           </div>
         </div>
       </div>
-
-      <div class="mt-6 text-xs text-slate-400">*Replace placeholder models with GLB/USDZ files of your species. Use embedded textures to avoid GLTF texture errors.</div>
+      <div class="mt-6 text-xs text-slate-400">*Replace placeholder models with GLB/USDZ files of your species.</div>
     </div>
   </section>
 
-  <!-- FAQ -->
+  <!-- FAQ, Contact, Footer (unchanged) -->
   <section id="faq" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
     <h2 class="text-2xl md:text-3xl font-bold">FAQ</h2>
     <div class="mt-6 grid gap-4">
       <details class="group rounded-2xl border border-slate-800 p-4">
         <summary class="cursor-pointer list-none">
-          <div class="flex items-center justify-between">
-            <span class="font-medium text-slate-200 group-open:text-white">Can I swap models?</span>
-            <span class="text-slate-500">▾</span>
-          </div>
+          <div class="flex items-center justify-between"><span class="font-medium text-slate-200 group-open:text-white">Can I swap models?</span><span class="text-slate-500">▾</span></div>
         </summary>
         <p class="mt-2 text-sm text-slate-300">Yes. Organize weights under /models and expose a selector for Mobile/Standard/Max.</p>
       </details>
       <details class="group rounded-2xl border border-slate-800 p-4">
         <summary class="cursor-pointer list-none">
-          <div class="flex items-center justify-between">
-            <span class="font-medium text-slate-200 group-open:text-white">What about low-light?</span>
-            <span class="text-slate-500">▾</span>
-          </div>
+          <div class="flex items-center justify-between"><span class="font-medium text-slate-200 group-open:text-white">What about low-light?</span><span class="text-slate-500">▾</span></div>
         </summary>
         <p class="mt-2 text-sm text-slate-300">Enable denoise + CLAHE in a preprocessing step before inference.</p>
       </details>
       <details class="group rounded-2xl border border-slate-800 p-4">
         <summary class="cursor-pointer list-none">
-          <div class="flex items-center justify-between">
-            <span class="font-medium text-slate-200 group-open:text-white">Will this run offline?</span>
-            <span class="text-slate-500">▾</span>
-          </div>
+          <div class="flex items-center justify-between"><span class="font-medium text-slate-200 group-open:text-white">Will this run offline?</span><span class="text-slate-500">▾</span></div>
         </summary>
         <p class="mt-2 text-sm text-slate-300">Yes, use WebGL/WebGPU backends; cache assets with a PWA service worker.</p>
       </details>
       <details class="group rounded-2xl border border-slate-800 p-4">
         <summary class="cursor-pointer list-none">
-          <div class="flex items-center justify-between">
-            <span class="font-medium text-slate-200 group-open:text-white">How do I deploy?</span>
-            <span class="text-slate-500">▾</span>
-          </div>
+          <div class="flex items-center justify-between"><span class="font-medium text-slate-200 group-open:text-white">How do I deploy?</span><span class="text-slate-500">▾</span></div>
         </summary>
         <p class="mt-2 text-sm text-slate-300">Push to GitHub, connect to Vercel/Netlify, add a custom domain, and you’re live.</p>
       </details>
     </div>
   </section>
 
-  <!-- Contact -->
   <section id="contact" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
     <div class="rounded-2xl border border-slate-800 p-6 grid md:grid-cols-2 gap-6">
       <div>
@@ -311,7 +277,6 @@
     </div>
   </section>
 
-  <!-- Footer -->
   <footer class="border-t border-slate-800 py-6">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-3">
       <span>© <span id="year"></span> Marine Science AI</span>
@@ -323,192 +288,79 @@
     </div>
   </footer>
 
-  <!-- JavaScript -->
+  <script src="assets/bridge.js"></script>
   <script>
-    // ---------------------------------------------
-    // Utilities
-    // ---------------------------------------------
-    const speciesLabels = ["Scallop","Crab","Skate","Flatfish","Roundfish","Whelk","Eel"];
+    // Footer year
+    document.getElementById('year').textContent = new Date().getFullYear();
 
-    const SPECIES_KB = {
-      Scallop: { habitat: "Sandy/gravel seabeds, 10–100 m", idCues: ["fan-shaped shell","radiating ribs","bilateral symmetry"], size: "6–20 cm shell width", blurb: "Bivalve mollusk; often rests on substrate and can swim short distances by clapping shells." },
-      Crab: { habitat: "Benthic zones from intertidal to shelf", idCues: ["sideways gait","broad carapace","chelae (claws)"], size: "3–25 cm carapace width", blurb: "Decapod crustacean with sturdy carapace; many species are scavengers or predators." },
-      Skate: { habitat: "Soft-bottom continental shelves", idCues: ["diamond silhouette","dorsal spines","wing-like pectorals"], size: "30–120 cm disc width", blurb: "Cartilaginous fish related to rays; usually demersal and well-camouflaged." },
-      Flatfish: { habitat: "Sandy/muddy bottoms; estuaries to shelf", idCues: ["both eyes on one side","asymmetric body","camouflage pattern"], size: "15–70 cm length", blurb: "Laterally compressed fishes (e.g., flounders); masters of substrate camouflage." },
-      Roundfish: { habitat: "Varied; reefs to open shelf", idCues: ["rounded cross-section","distinct dorsal/caudal fins","typical fish profile"], size: "8–60 cm length", blurb: "Catch-all category for non-flat benthic-associated fishes in this task." },
-      Whelk: { habitat: "Sandy/muddy bottoms; colder waters", idCues: ["spiral shell","siphonal canal","aperture lip"], size: "5–15 cm shell length", blurb: "Predatory sea snail; often preys on bivalves using a radula to bore." },
-      Eel: { habitat: "Burrows in sand/mud; rocky crevices", idCues: ["elongate body","reduced pectoral fins","continuous dorsal-anal fin"], size: "20–150+ cm length", blurb: "Elongate fishes with serpentine movement; many species are nocturnal." }
-    };
+    // Demo wiring (placeholder). Replace with real model inference later.
+    const btnPick = document.getElementById('btn-pick');
+    const fileInput = document.getElementById('file-input');
+    const demoEmpty = document.getElementById('demo-empty');
+    const demoGrid = document.getElementById('demo-grid');
+    const imgPreview = document.getElementById('img-preview');
+    const fileName = document.getElementById('file-name');
+    const predList = document.getElementById('pred-list');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const btnViewMap = document.getElementById('btn-view-map');
+    const aiText = document.getElementById('ai-text');
 
-    function pseudoPredict(file) {
-      // Deterministic file-name based ranking for demo/testing
-      const base = (file?.name || "").toLowerCase();
-      let seed = 0;
-      for (let i=0; i<base.length; i++) seed = (seed * 31 + base.charCodeAt(i)) >>> 0;
-      const scores = speciesLabels.map((_, i) => ((Math.sin(seed + i * 17) + 1) / 2));
-      const sum = scores.reduce((a,b)=>a+b,0) || 1;
-      const probs = scores.map(s => s/sum);
-      return speciesLabels.map((l, i) => ({ label: l, confidence: probs[i] }))
-                          .sort((a,b)=>b.confidence - a.confidence);
-    }
+    let topPrediction = null;
 
-    function buildDescription(top) {
-      const kb = SPECIES_KB[top];
-      return `${top} — ${kb.blurb} Likely habitat: ${kb.habitat}. Key ID cues: ${kb.idCues.join(", ")}. Typical size: ${kb.size}.`;
-    }
-
-    // ---------------------------------------------
-    // DOM elements
-    // ---------------------------------------------
-    const yearSpan = document.getElementById("year");
-    const btnPick = document.getElementById("btn-pick");
-    const fileInput = document.getElementById("file-input");
-    const demoEmpty = document.getElementById("demo-empty");
-    const demoGrid = document.getElementById("demo-grid");
-    const imgPreview = document.getElementById("img-preview");
-    const fileNameEl = document.getElementById("file-name");
-    const predList = document.getElementById("pred-list");
-    const btnAnalyze = document.getElementById("btn-analyze");
-    const btnReanalyze = document.getElementById("btn-reanalyze");
-    const btnCopy = document.getElementById("btn-copy");
-    const aiTextEl = document.getElementById("ai-text");
-    const testResults = document.getElementById("test-results");
-
-    let fileObj = null;
-    let preds = [];
-
-    yearSpan.textContent = new Date().getFullYear();
-
-    // ---------------------------------------------
-    // Image upload + preview
-    // ---------------------------------------------
-    btnPick.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      fileObj = file;
-      fileNameEl.textContent = file.name;
-      const url = URL.createObjectURL(file);
+    btnPick.addEventListener('click', ()=> fileInput.click());
+    fileInput.addEventListener('change', (e)=>{
+      const f = e.target.files && e.target.files[0];
+      if(!f) return;
+      fileName.textContent = f.name;
+      const url = URL.createObjectURL(f);
       imgPreview.src = url;
-      demoEmpty.classList.add("hidden");
-      demoGrid.classList.remove("hidden");
-      preds = [];
-      aiTextEl.textContent = "Click Analyze to generate a short species description based on the top prediction.";
-      btnCopy.disabled = true;
-      btnCopy.classList.add("bg-slate-800","text-slate-500","cursor-not-allowed");
-      btnCopy.classList.remove("bg-cyan-500","text-slate-950","hover:bg-cyan-400");
-      renderPreds();
+      demoEmpty.classList.add('hidden');
+      demoGrid.classList.remove('hidden');
+      predList.innerHTML = '';
+      btnViewMap.disabled = true;
+      topPrediction = null;
     });
 
-    function renderPreds() {
-      predList.innerHTML = "";
-      speciesLabels.forEach((s) => {
-        const val = (preds.find(p => p.label === s)?.confidence ?? 0).toFixed(2);
-        const div = document.createElement("div");
-        div.className = "rounded-xl border border-slate-800 p-2 flex items-center justify-between";
-        div.innerHTML = `<span>${s}</span><span class="tabular-nums">${val}</span>`;
-        predList.appendChild(div);
+    // Fake inference: rotate through a short list so the bridge can be tested without a model.
+    const demoSpecies = ['Blue Crab','European Eel','Summer Flounder (Fluke)','Atlantic Cod','Japanese Eel','Dungeness Crab'];
+
+    function renderPredictions() {
+      predList.innerHTML = '';
+      const shuffled = demoSpecies.slice().sort(()=>Math.random()-0.5).slice(4);
+      const preds = shuffled.map((name, i)=>({name, prob: (0.55 - i*0.1)}));
+      topPrediction = preds[0]?.name || null;
+      preds.forEach(p=>{
+        const item = document.createElement('div');
+        item.className='rounded-xl border border-slate-800 p-3';
+        item.innerHTML = `<div class="font-medium">${p.name}</div><div class="text-slate-400 mt-1">${(p.prob*100).toFixed(1)}%</div>`;
+        item.onclick = ()=>{ topPrediction=p.name; btnViewMap.disabled=false; };
+        predList.appendChild(item);
       });
+      aiText.textContent = topPrediction ? `Top prediction: ${topPrediction}. Click "View Top Species on Map" to see hotspots & migration.` : 'No prediction.';
+      btnViewMap.disabled = !topPrediction;
     }
 
-    function analyze() {
-      if (!fileObj) return;
-      preds = pseudoPredict(fileObj);
-      renderPreds();
-      aiTextEl.textContent = buildDescription(preds[0].label);
-      btnCopy.disabled = false;
-      btnCopy.classList.remove("bg-slate-800","text-slate-500","cursor-not-allowed");
-      btnCopy.classList.add("bg-cyan-500","text-slate-950","hover:bg-cyan-400");
-    }
-
-    btnAnalyze.addEventListener("click", analyze);
-    btnReanalyze.addEventListener("click", analyze);
-    btnCopy.addEventListener("click", () => {
-      navigator.clipboard.writeText(aiTextEl.textContent || "").catch(()=>{});
+    btnAnalyze.addEventListener('click', renderPredictions);
+    document.getElementById('btn-reanalyze').addEventListener('click', renderPredictions);
+    document.getElementById('btn-copy').addEventListener('click', ()=>{
+      if(!topPrediction) return;
+      navigator.clipboard.writeText(aiText.textContent);
+    });
+    btnViewMap.addEventListener('click', ()=>{
+      if(topPrediction) goToSpecies(topPrediction);
     });
 
-    // ---------------------------------------------
-    // AR species chooser (placeholder models w/ embedded textures)
-    // ---------------------------------------------
-    const MV_MODELS = [
-      { id: "scallop", name: "Scallop",
-        glb: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-        usdz: "https://modelviewer.dev/shared-assets/models/RobotExpressive.usdz",
-        blurb: "Bivalve mollusk found on sandy/gravel seabeds; fan-shaped shell with radiating ribs." },
-      { id: "crab", name: "Crab",
-        glb: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-        usdz: "https://modelviewer.dev/shared-assets/models/RobotExpressive.usdz",
-        blurb: "Decapod crustacean; laterally compressed body and prominent claws; common on benthic habitats." },
-      { id: "skate", name: "Skate",
-        glb: "https://modelviewer.dev/shared-assets/models/RobotExpressive.glb",
-        usdz: "https://modelviewer.dev/shared-assets/models/RobotExpressive.usdz",
-        blurb: "Cartilaginous fish related to rays; diamond-shaped body, prefers soft-bottom continental shelves." }
-    ];
-    const mv = document.getElementById("mv");
-    const mvName = document.getElementById("mv-species-name");
-    const mvBlurb = document.getElementById("mv-species-blurb");
-    const mvChooser = document.getElementById("mv-chooser");
-
-    function selectModel(m) {
-      mv.setAttribute("src", m.glb);
-      mv.setAttribute("ios-src", m.usdz);
-      mvName.textContent = m.name;
-      mvBlurb.textContent = m.blurb;
-      // no-op: using embedded-texture models prevents GLTF texture fetch errors
-    }
-
-    MV_MODELS.forEach((m, idx) => {
-      const btn = document.createElement("button");
-      btn.className = "rounded-2xl px-3 py-1.5 text-sm border " + (idx===0 ? "bg-cyan-500 text-slate-950 border-cyan-400" : "border-slate-700 hover:border-slate-500");
-      btn.textContent = m.name;
-      btn.addEventListener("click", () => {
-        // toggle selected styles
-        Array.from(mvChooser.children).forEach(ch => ch.className = "rounded-2xl px-3 py-1.5 text-sm border border-slate-700 hover:border-slate-500");
-        btn.className = "rounded-2xl px-3 py-1.5 text-sm border bg-cyan-500 text-slate-950 border-cyan-400";
-        selectModel(m);
-      });
-      mvChooser.appendChild(btn);
-      if (idx === 0) selectModel(m);
-    });
-
-    // ---------------------------------------------
-    // Developer self-tests (rendered in the UI)
-    // ---------------------------------------------
-    function runTests() {
-      const results = [];
-      // Test 1: KB completeness
-      results.push({ name: "KB completeness", pass: speciesLabels.every(l => !!SPECIES_KB[l]) });
-      // Test 2: Description length
-      const desc = buildDescription("Crab");
-      results.push({ name: "Description length (>40)", pass: desc.length > 40, note: desc.length + " chars" });
-      // Test 3: Pseudo predictor returns 7 labels & sums to ~1
-      const fake = new File([""], "test_crab.jpg");
-      const p = pseudoPredict(fake);
-      results.push({ name: "Predictor returns 7 labels", pass: p.length === 7 });
-      const sum = p.reduce((a,b)=>a+b.confidence,0);
-      results.push({ name: "Probs sum approx 1", pass: Math.abs(sum - 1) < 1e-6, note: sum.toFixed(6) });
-
-      // Render
-      testResults.innerHTML = "";
-      results.forEach(r => {
-        const li = document.createElement("li");
-        li.className = "flex items-center gap-2 py-1";
-        const dot = document.createElement("span");
-        dot.className = "inline-block w-2.5 h-2.5 rounded-full " + (r.pass ? "bg-green-500" : "bg-red-500");
-        const name = document.createElement("span");
-        name.textContent = r.name;
-        li.appendChild(dot);
-        li.appendChild(name);
-        if (r.note) {
-          const note = document.createElement("span");
-          note.className = "text-slate-500";
-          note.textContent = " — " + r.note;
-          li.appendChild(note);
-        }
-        testResults.appendChild(li);
+    // Build quick chooser in AR panel (optional)
+    const chooser = document.getElementById('mv-chooser');
+    if (chooser) {
+      ['Blue Crab','European Eel','Japanese Eel','Atlantic Cod'].forEach(n=>{
+        const b=document.createElement('button');
+        b.className='rounded-xl border border-slate-700 px-3 py-1.5 text-sm hover:border-slate-500';
+        b.textContent=n;
+        b.onclick=()=>goToSpecies(n);
+        chooser.appendChild(b);
       });
     }
-    runTests();
   </script>
 </body>
 </html>
