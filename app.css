@@ -1,0 +1,5 @@
+html, body { height: 100%; }
+.radial-bg {
+  background: radial-gradient(1200px 400px at 50% 10%, rgba(94,234,212,0.08), transparent), #0b1220;
+}
+.tabular-nums { font-variant-numeric: tabular-nums; }

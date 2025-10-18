@@ -1,0 +1,98 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+  <!-- Global Navbar -->
+<!-- Navbar (identical to index.html) -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: Logo + Site Name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;"
+      />
+      <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+    </div>
+
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+      <a href="Item Detection.html" class="hover:text-slate-white">Photo Detection</a>
+      <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+      <a href="crab.html" class="hover:text-white">General Data</a>
+    </nav>
+
+    <!-- Contact or back to main -->
+    <a href="Updated_Website_Home_Page.html" class="hidden md:inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">This page shows species details after your model labels an image. Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.</p>
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+      <div class="mt-3 text-xs text-slate-300 flex items-center gap-3">
+        <span class="uppercase tracking-wide text-slate-400">Data source</span>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcSample" type="radio" name="datasrc" class="accent-teal-400" checked>
+          <span>Sample</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcFathomNet" type="radio" name="datasrc" class="accent-teal-400">
+          <span>FathomNet (live)</span>
+        </label>
+        <span id="srcStatus" class="ml-2 text-[11px] text-slate-400"></span>
+      </div>
+    </div>
+    <nav class="max-w-6xl mx-auto mt-6 flex gap-2 flex-wrap">
+      <a href="crab.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-teal-500 text-black border-teal-400">Crab</a><a href="eel.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Eel</a><a href="flatfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Flatfish</a><a href="roundfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Roundfish</a><a href="scallop.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Scallop</a><a href="skate.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Skate</a><a href="whelk.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Whelk</a>
+    </nav>
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">Crab species from the user's table. Hotspot coords are representative centroids; replace with your survey data for accuracy.</p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div><div class="text-slate-400">Scientific name</div><div id="panelSci" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Family</div><div id="panelFamily" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Regions</div><div id="panelRegions" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Best months</div><div id="panelMonths" class="font-medium">—</div></div>
+        </div>
+      </article>
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">Heat = high-density observations • Lines = migration routes (filtered by month)</div>
+      </div>
+    </section>
+  </main>
+  <script>window.SPECIES_NAME="Crab"; window.SPECIES_DATA={"description": "Crab species from the user's table. Hotspot coords are representative centroids; replace with your survey data for accuracy.", "types": [{"common": "Blue Crab", "scientific": "Callinectes sapidus", "fathomnetConcept": "Callinectes sapidus", "family": "Portunidae", "regions": ["W. Atlantic & Gulf of Mexico", "Chesapeake Bay", "U.S. Mid‑Atlantic", "Gulf coasts"], "monthsBest": ["Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct"], "info": "Females migrate downstream to higher‑salinity mouths to spawn; larvae use tidal/vertical transport.", "hotspots": [[37.2, -76.0, 0.9], [29.7, -91.2, 0.8], [27.8, -82.6, 0.6], [41.7, -70.3, 0.4]], "migrations": [{"name": "Female downstream to estuary mouth (spawn)", "months": [7, 8, 9, 10], "path": [[38.9, -76.7], [38.3, -76.3], [37.8, -76.2], [37.0, -76.1]]}]}, {"common": "Dungeness Crab", "scientific": "Metacarcinus magister", "fathomnetConcept": "Metacarcinus magister", "family": "Cancridae", "regions": ["NE Pacific: Alaska → California", "Puget Sound", "Strait of Georgia", "Outer shelf"], "monthsBest": ["Apr", "May", "Jun", "Jul", "Aug"], "info": "Seasonal inshore/offshore depth shifts; reproduction/molting in spring.", "hotspots": [[47.6, -122.4, 0.8], [49.1, -123.2, 0.7], [44.6, -124.1, 0.6]], "migrations": [{"name": "Inshore (spring) ↔ deeper (summer/fall)", "months": [4, 5, 6, 7, 8, 9, 10], "path": [[47.8, -122.6], [47.7, -122.7], [47.6, -122.9]]}]}, {"common": "Red King Crab", "scientific": "Paralithodes camtschaticus", "fathomnetConcept": "Paralithodes camtschaticus", "family": "Lithodidae", "regions": ["Bering Sea", "Aleutian Islands", "Russian Far East", "Barents (introduced)"], "monthsBest": ["Feb", "Mar", "Apr", "May"], "info": "Inshore migrations to shallow breeding zones; offshore feeding later.", "hotspots": [[57.0, -170.0, 0.6], [53.9, 158.6, 0.7], [71.0, 33.0, 0.5]], "migrations": [{"name": "Shallow breeding migration", "months": [2, 3, 4, 5], "path": [[57.5, -170.5], [57.2, -170.2], [57.0, -170.0]]}]}, {"common": "Snow Crab", "scientific": "Chionoecetes opilio", "fathomnetConcept": "Chionoecetes opilio", "family": "Oregoniidae", "regions": ["N. Atlantic shelves", "Gulf of St. Lawrence", "Newfoundland", "Bering Sea"], "monthsBest": ["Feb", "Mar", "Apr", "May"], "info": "Larval drift with currents; adults shift depth with temperature/food.", "hotspots": [[49.0, -61.8, 0.7], [50.0, -55.0, 0.6], [58.0, -170.0, 0.6]], "migrations": [{"name": "Depth/latitudinal shifts", "months": [3, 4, 5], "path": [[49.2, -62.2], [49.5, -61.9], [49.8, -61.6]]}]}, {"common": "Stone Crab", "scientific": "Menippe mercenaria", "fathomnetConcept": "Menippe mercenaria", "family": "Menippidae", "regions": ["FL coasts", "Gulf of Mexico", "Caribbean"], "monthsBest": ["May", "Jun", "Jul", "Aug", "Sep"], "info": "Local movements among reefs/mangroves; limited large‑scale migrations.", "hotspots": [[24.6, -81.8, 0.7], [25.4, -80.1, 0.6], [27.0, -82.6, 0.5]], "migrations": []}, {"common": "Pacific Red Rock Crab", "scientific": "Cancer productus", "fathomnetConcept": "Cancer productus", "family": "Cancridae", "regions": ["Pacific NW & California rocky shores"], "monthsBest": ["May", "Jun", "Jul", "Aug"], "info": "Local/habitat movement; seasonal depth shifts.", "hotspots": [[48.5, -123.1, 0.6], [37.8, -122.5, 0.5]], "migrations": []}, {"common": "Atlantic Rock Crab", "scientific": "Cancer irroratus", "fathomnetConcept": "Cancer irroratus", "family": "Cancridae", "regions": ["Atlantic Canada & NE U.S."], "monthsBest": ["May", "Jun", "Jul", "Aug"], "info": "Local movements across rocky/gravel substrates.", "hotspots": [[44.5, -63.6, 0.6], [42.4, -70.9, 0.5]], "migrations": []}, {"common": "Hermit Crabs (generic)", "scientific": "Pagurus spp., Clibanarius spp.", "fathomnetConcept": "Pagurus", "family": "Paguridae/Diogenidae", "regions": ["Global shallow coasts", "Reef flats", "Mangroves", "Seagrass"], "monthsBest": ["Warm season"], "info": "Local foraging & shell exchange; planktonic larvae.", "hotspots": [[18.3, -66.1, 0.5], [13.4, 144.7, 0.5]], "migrations": []}, {"common": "Fiddler Crabs", "scientific": "Uca spp.", "fathomnetConcept": "Uca", "family": "Ocypodidae", "regions": ["Tropical/subtropical estuaries & mangroves (global)"], "monthsBest": ["Warm/rainy seasons"], "info": "Daily tidal migrations; larval export on spring tides.", "hotspots": [[25.3, 55.3, 0.5], [15.3, 74.1, 0.5], [29.7, -81.2, 0.5]], "migrations": []}, {"common": "Ghost Crabs", "scientific": "Ocypode spp.", "fathomnetConcept": "Ocypode", "family": "Ocypodidae", "regions": ["Sandy beaches worldwide (tropics/subtropics)"], "monthsBest": ["Spring‑summer"], "info": "No large migrations; nightly foraging from burrows; seasonal recruitment.", "hotspots": [[26.1, -80.1, 0.5], [13.1, 80.3, 0.5]], "migrations": []}, {"common": "Oyster / Pea Crab", "scientific": "Zaops ostreus", "fathomnetConcept": "Zaops ostreus", "family": "Pinnotheridae", "regions": ["U.S. Atlantic & Gulf oyster reefs"], "monthsBest": ["May", "Jun", "Jul", "Aug"], "info": "Commensal in oysters; planktonic larvae settle into hosts.", "hotspots": [[29.4, -94.9, 0.6], [30.2, -90.1, 0.6], [32.0, -81.1, 0.5]], "migrations": []}, {"common": "Velvet Crab", "scientific": "Necora puber", "fathomnetConcept": "Necora puber", "family": "Portunidae", "regions": ["NE Atlantic: British Isles, Celtic/Irish/North Seas"], "monthsBest": ["Jun", "Jul", "Aug", "Sep", "Oct"], "info": "Larval transport by tides; adults more inshore in summer–autumn.", "hotspots": [[50.6, -1.9, 0.6], [52.7, 1.3, 0.5], [54.0, -5.7, 0.5]], "migrations": []}, {"common": "Land / Terrestrial Crabs", "scientific": "e.g., Gecarcinus quadratus, Cardisoma guanhumi", "fathomnetConcept": "Gecarcinus quadratus", "family": "Gecarcinidae/Cardisomatidae", "regions": ["Tropical coastal forests & islands (Caribbean, Central America)"], "monthsBest": ["Early rainy season"], "info": "Mass migrations to sea for larval release during rainy season (often nocturnal).", "hotspots": [[18.0, -76.8, 0.5], [9.6, -84.2, 0.5]], "migrations": [{"name": "Rain‑onset sea‑ward migration", "months": [5, 6, 7], "path": [[9.7, -84.3], [9.6, -84.25], [9.5, -84.2]]}]}, {"common": "Chinese Mitten Crab", "scientific": "Eriocheir sinensis", "fathomnetConcept": "Eriocheir sinensis", "family": "Varunidae", "regions": ["East Asia coasts", "Invasive: Europe rivers & estuaries", "California occurrences"], "monthsBest": ["Mar", "Apr", "May", "Oct", "Nov"], "info": "Catadromous: juveniles migrate upstream in spring; adults migrate downstream to estuaries in fall for spawning.", "hotspots": [[31.2, 121.5, 0.7], [53.5, 9.9, 0.6], [51.9, 4.5, 0.6], [37.8, -122.3, 0.5]], "migrations": [{"name": "Upstream juveniles", "months": [3, 4, 5], "path": [[51.9, 4.5], [52.1, 4.7], [52.3, 4.9]]}, {"name": "Downstream adults (spawn)", "months": [10, 11], "path": [[52.3, 4.9], [52.1, 4.7], [51.9, 4.5]]}]}]};</script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

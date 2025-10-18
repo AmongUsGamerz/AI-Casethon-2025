@@ -1,0 +1,99 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+
+  <!-- Navbar (identical to index.html) -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: Logo + Site Name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;"
+      />
+      <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+    </div>
+
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+      <a href="Item Detection.html" class="hover:text-slate-white">Photo Detection</a>
+      <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+      <a href="crab.html" class="hover:text-white">General Data</a>
+    </nav>
+
+    <!-- Right: contact button -->
+    <a href="index.html#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">This page shows species details after your model labels an image. Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.</p>
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+      <div class="mt-3 text-xs text-slate-300 flex items-center gap-3">
+        <span class="uppercase tracking-wide text-slate-400">Data source</span>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcSample" type="radio" name="datasrc" class="accent-teal-400" checked>
+          <span>Sample</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcFathomNet" type="radio" name="datasrc" class="accent-teal-400">
+          <span>FathomNet (live)</span>
+        </label>
+        <span id="srcStatus" class="ml-2 text-[11px] text-slate-400"></span>
+      </div>
+    </div>
+    <nav class="max-w-6xl mx-auto mt-6 flex gap-2 flex-wrap">
+      <a href="crab.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Crab</a><a href="eel.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Eel</a><a href="flatfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-teal-500 text-black border-teal-400">Flatfish</a><a href="roundfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Roundfish</a><a href="scallop.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Scallop</a><a href="skate.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Skate</a><a href="whelk.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Whelk</a>
+    </nav>
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">Flatfish (order Pleuronectiformes): demersal fishes with strong seasonal inshore/offshore movements in many regions.</p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div><div class="text-slate-400">Scientific name</div><div id="panelSci" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Family</div><div id="panelFamily" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Regions</div><div id="panelRegions" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Best months</div><div id="panelMonths" class="font-medium">—</div></div>
+        </div>
+      </article>
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">Heat = high-density observations • Lines = migration routes (filtered by month)</div>
+      </div>
+    </section>
+  </main>
+  <script>window.SPECIES_NAME="Flatfish"; window.SPECIES_DATA={"description": "Flatfish (order Pleuronectiformes): demersal fishes with strong seasonal inshore/offshore movements in many regions.", "types": [{"common": "Summer Flounder (Fluke)", "scientific": "Paralichthys dentatus", "fathomnetConcept": "Paralichthys dentatus", "family": "Paralichthyidae", "regions": ["U.S. Mid‑Atlantic Bight", "New Jersey–North Carolina shelf"], "monthsBest": ["May", "Jun", "Jul", "Aug", "Sep", "Oct"], "info": "Inshore in spring–summer to feed; offshore migration to deeper shelf in fall–winter for spawning.", "hotspots": [[40.1, -73.9, 0.7], [38.9, -74.8, 0.7], [36.9, -75.9, 0.6]], "migrations": [{"name": "Inshore (spring/summer)", "months": [5, 6, 7, 8, 9, 10], "path": [[39.8, -74.1], [39.3, -74.6], [38.6, -74.9]]}, {"name": "Offshore (late fall/winter)", "months": [11, 12, 1, 2, 3, 4], "path": [[38.6, -74.9], [38.2, -75.6], [37.6, -75.9]]}]}, {"common": "Winter Flounder", "scientific": "Pseudopleuronectes americanus", "fathomnetConcept": "Pseudopleuronectes americanus", "family": "Pleuronectidae", "regions": ["New England", "Gulf of Maine", "Southern Nova Scotia"], "monthsBest": ["Jan", "Feb", "Mar", "Apr"], "info": "Spawns inshore during late winter–spring in estuaries and bays; limited long‑range migration.", "hotspots": [[42.3, -70.9, 0.7], [41.6, -70.6, 0.6], [43.7, -70.2, 0.6]], "migrations": []}, {"common": "Atlantic Halibut", "scientific": "Hippoglossus hippoglossus", "fathomnetConcept": "Hippoglossus hippoglossus", "family": "Pleuronectidae", "regions": ["NW Atlantic cold shelf & slope", "Labrador–Gulf of St. Lawrence"], "monthsBest": ["May", "Jun", "Jul", "Aug", "Sep"], "info": "Large flatfish with seasonal depth movements between shelf and slope.", "hotspots": [[47.6, -52.7, 0.6], [44.0, -56.0, 0.5]], "migrations": [{"name": "Shelf ↔ slope seasonal shifts", "months": [5, 6, 7, 8, 9], "path": [[47.6, -52.7], [47.0, -53.5], [46.5, -54.2]]}]}, {"common": "Pacific Halibut", "scientific": "Hippoglossus stenolepis", "fathomnetConcept": "Hippoglossus stenolepis", "family": "Pleuronectidae", "regions": ["NE Pacific: Alaska–B.C.–U.S. West Coast"], "monthsBest": ["May", "Jun", "Jul", "Aug", "Sep"], "info": "Adults migrate seasonally and ontogenetically along shelf; spawning in winter in deeper water.", "hotspots": [[59.6, -151.5, 0.7], [54.5, -130.4, 0.6], [57.0, -153.0, 0.6]], "migrations": [{"name": "Summer feeding along shelf", "months": [5, 6, 7, 8, 9], "path": [[59.6, -151.5], [58.5, -150.0], [57.8, -149.0]]}]}, {"common": "European Plaice", "scientific": "Pleuronectes platessa", "fathomnetConcept": "Pleuronectes platessa", "family": "Pleuronectidae", "regions": ["North Sea", "English Channel", "Skagerrak"], "monthsBest": ["Apr", "May", "Jun", "Jul", "Aug", "Sep"], "info": "Feeds in shallow coastal waters spring–summer; offshore to spawn in winter.", "hotspots": [[53.0, 2.0, 0.7], [55.5, 8.0, 0.6], [52.5, 4.0, 0.6]], "migrations": [{"name": "Coastal feeding (spring–summer)", "months": [4, 5, 6, 7, 8, 9], "path": [[53.0, 2.0], [53.5, 3.5], [54.0, 5.0]]}]}, {"common": "Turbot", "scientific": "Scophthalmus maximus", "fathomnetConcept": "Scophthalmus maximus", "family": "Scophthalmidae", "regions": ["NE Atlantic", "North Sea", "Baltic & Black Sea"], "monthsBest": ["May", "Jun", "Jul", "Aug"], "info": "Coastal to shelf habitats; moves shallower to feed in warm months; spawns spring–summer.", "hotspots": [[51.0, 1.4, 0.6], [44.0, 28.7, 0.6]], "migrations": []}, {"common": "Dover Sole (Common Sole)", "scientific": "Solea solea", "fathomnetConcept": "Solea solea", "family": "Soleidae", "regions": ["English Channel", "Southern North Sea", "Bay of Biscay"], "monthsBest": ["Apr", "May", "Jun", "Jul", "Aug", "Sep"], "info": "Inshore feeding during warm months; offshore to spawn in late winter–spring.", "hotspots": [[50.6, -1.9, 0.6], [51.0, 1.4, 0.6], [48.5, -4.5, 0.5]], "migrations": []}, {"common": "Yellowtail Flounder", "scientific": "Limanda ferruginea", "fathomnetConcept": "Limanda ferruginea", "family": "Pleuronectidae", "regions": ["NW Atlantic: Georges Bank, Scotian Shelf"], "monthsBest": ["May", "Jun", "Jul", "Aug", "Sep"], "info": "Shelf‑resident with seasonal distribution shifts tied to temperature.", "hotspots": [[42.0, -66.0, 0.6], [45.0, -61.0, 0.6]], "migrations": []}]};</script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

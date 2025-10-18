@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+  
+  <!-- Navbar (identical to index.html) -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: Logo + Site Name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;"
+      />
+      <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+    </div>
+
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+      <a href="Item Detection.html" class="hover:text-slate-white">Photo Detection</a>
+      <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+      <a href="crab.html" class="hover:text-white">General Data</a>
+    </nav>
+
+    <!-- Right: contact button -->
+    <a href="index.html#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">
+      This page shows species details after your model labels an image.
+      Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.
+    </p>
+
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+      <div class="mt-3 text-xs text-slate-300 flex items-center gap-3">
+        <span class="uppercase tracking-wide text-slate-400">Data source</span>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcSample" type="radio" name="datasrc" class="accent-teal-400" checked>
+          <span>Sample</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcFathomNet" type="radio" name="datasrc" class="accent-teal-400">
+          <span>FathomNet (live)</span>
+        </label>
+        <span id="srcStatus" class="ml-2 text-[11px] text-slate-400"></span>
+      </div>
+    </div>
+
+    <nav class="max-w-6xl mx-auto mt-6 flex gap-2 flex-wrap">
+      <a href="crab.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Crab</a>
+      <a href="eel.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Eel</a>
+      <a href="flatfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Flatfish</a>
+      <a href="roundfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Roundfish</a>
+      <a href="scallop.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-teal-500 text-black border-teal-400">Scallop</a>
+      <a href="skate.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Skate</a>
+      <a href="whelk.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Whelk</a>
+    </nav>
+
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">
+          Scallops (family Pectinidae): mostly sedentary bivalves on sandy/gravely bottoms; strong
+          seasonal spawning with planktonic larval drift. Adults can “swim” short bursts by clapping shells.
+        </p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div><div class="text-slate-400">Scientific name</div><div id="panelSci" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Family</div><div id="panelFamily" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Regions</div><div id="panelRegions" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Best months</div><div id="panelMonths" class="font-medium">—</div></div>
+        </div>
+      </article>
+
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">
+          Heat = high-density observations • Lines = larval drift or adult seasonal movements (filtered by month)
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Data object: same shape as crab.html -->
+  <script>
+    window.SPECIES_NAME = "Scallop";
+    window.SPECIES_DATA = {
+      "description": "Major scallop species and typical hotspots. Routes indicate larval drift or short-range seasonal movements.",
+      "types": [
+        {
+          "common": "Atlantic Sea Scallop",
+          "scientific": "Placopecten magellanicus",
+          "fathomnetConcept": "Placopecten magellanicus",
+          "family": "Pectinidae",
+          "regions": ["NW Atlantic: Georges Bank, Gulf of Maine, Mid-Atlantic Bight"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep","Oct"],
+          "info": "Deep-shelf beds on sand/gravel; major fisheries on Georges Bank and Mid-Atlantic.",
+          "hotspots": [
+            [41.6, -67.0, 0.8],  /* Georges Bank */
+            [43.2, -68.5, 0.7],  /* Gulf of Maine */
+            [39.0, -73.5, 0.6]   /* Mid-Atlantic Bight */
+          ],
+          "migrations": [
+            {
+              "name": "Late-summer larval drift (Georges Bank → shelf)",
+              "months": [8,9,10],
+              "path": [[41.6,-67.0],[41.2,-68.2],[40.5,-70.0],[39.8,-72.0]]
+            }
+          ]
+        },
+        {
+          "common": "King Scallop (Great Scallop)",
+          "scientific": "Pecten maximus",
+          "fathomnetConcept": "Pecten maximus",
+          "family": "Pectinidae",
+          "regions": ["NE Atlantic: English Channel, Celtic Sea, Irish Sea, North Sea margins"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug","Sep"],
+          "info": "Large European scallop; coastal to shelf grounds.",
+          "hotspots": [
+            [50.5, -2.0, 0.7],  /* English Channel */
+            [54.5, -5.5, 0.6],  /* Irish Sea */
+            [56.0,  2.0, 0.5]   /* North Sea edge */
+          ],
+          "migrations": [
+            {
+              "name": "Spring–summer nearshore shift",
+              "months": [4,5,6,7,8,9],
+              "path": [[50.5,-2.0],[50.9,-3.0],[51.2,-4.2]]
+            }
+          ]
+        },
+        {
+          "common": "Queen Scallop",
+          "scientific": "Aequipecten opercularis",
+          "fathomnetConcept": "Aequipecten opercularis",
+          "family": "Pectinidae",
+          "regions": ["NE Atlantic: Irish Sea, around Isle of Man, W Scotland"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Smaller species; well-known fishery around Isle of Man.",
+          "hotspots": [
+            [54.1, -4.7, 0.7],
+            [55.5, -5.8, 0.5]
+          ],
+          "migrations": []
+        },
+        {
+          "common": "Bay Scallop",
+          "scientific": "Argopecten irradians",
+          "fathomnetConcept": "Argopecten irradians",
+          "family": "Pectinidae",
+          "regions": ["W Atlantic estuaries: Long Island, Mid-Atlantic & SE US bays"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Shallow eelgrass beds; strong local recruitment pulses.",
+          "hotspots": [
+            [40.9, -72.6, 0.7],  /* Long Island bays */
+            [34.7, -76.6, 0.6],  /* NC sounds */
+            [27.5, -80.2, 0.5]   /* FL east coast lagoons */
+          ],
+          "migrations": []
+        },
+        {
+          "common": "Calico Scallop",
+          "scientific": "Argopecten gibbus",
+          "fathomnetConcept": "Argopecten gibbus",
+          "family": "Pectinidae",
+          "regions": ["SE US shelf: Florida–Georgia; E Gulf of Mexico"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug"],
+          "info": "Offshore shelf aggregations; highly variable year to year.",
+          "hotspots": [
+            [28.5, -80.1, 0.6],  /* off Cape Canaveral */
+            [30.0, -80.0, 0.5],
+            [27.0, -84.0, 0.5]   /* E Gulf */
+          ],
+          "migrations": []
+        },
+        {
+          "common": "Weathervane Scallop (Pacific)",
+          "scientific": "Patinopecten caurinus",
+          "fathomnetConcept": "Patinopecten caurinus",
+          "family": "Pectinidae",
+          "regions": ["NE Pacific: Gulf of Alaska, Aleutians, Bering Sea margins"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Cold-water shelf beds; Alaska fisheries.",
+          "hotspots": [
+            [57.0, -152.5, 0.7],  /* Kodiak/Gulf of Alaska */
+            [53.0, -167.0, 0.6],  /* Aleutians */
+            [59.0, -144.0, 0.5]
+          ],
+          "migrations": [
+            {
+              "name": "Summer along-shelf dispersal",
+              "months": [6,7,8],
+              "path": [[57.0,-152.5],[56.5,-151.0],[55.8,-149.5]]
+            }
+          ]
+        },
+        {
+          "common": "Japanese Scallop (Yesso)",
+          "scientific": "Patinopecten yessoensis",
+          "fathomnetConcept": "Patinopecten yessoensis",
+          "family": "Pectinidae",
+          "regions": ["NW Pacific: Hokkaido & N Honshu (Japan), Sea of Okhotsk"],
+          "monthsBest": ["Apr","May","Jun","Jul"],
+          "info": "Cool-water species, large aquaculture; larvae retained in bays/straits.",
+          "hotspots": [
+            [43.0, 145.0, 0.7],  /* E Hokkaido */
+            [41.0, 141.2, 0.6],  /* Mutsu Bay */
+            [45.0, 144.0, 0.5]   /* Okhotsk */
+          ],
+          "migrations": [
+            {
+              "name": "Spring larval drift within bays",
+              "months": [4,5,6],
+              "path": [[41.0,141.2],[41.2,141.4],[41.3,141.6]]
+            }
+          ]
+        },
+        {
+          "common": "Chinese/Japanese Scallop",
+          "scientific": "Chlamys (Mizuhopecten) farreri",
+          "fathomnetConcept": "Chlamys farreri",
+          "family": "Pectinidae",
+          "regions": ["NW Pacific: Yellow Sea & Bohai Sea (China), Korea"],
+          "monthsBest": ["May","Jun","Jul","Aug"],
+          "info": "Nearshore shelf/archipelago zones; major aquaculture species.",
+          "hotspots": [
+            [37.0, 122.0, 0.7],
+            [36.0, 121.0, 0.6]
+          ],
+          "migrations": []
+        },
+        {
+          "common": "Chilean Scallop",
+          "scientific": "Argopecten purpuratus",
+          "fathomnetConcept": "Argopecten purpuratus",
+          "family": "Pectinidae",
+          "regions": ["SE Pacific: N–Central Chile & S Peru bays"],
+          "monthsBest": ["Sep","Oct","Nov","Dec"],
+          "info": "Upwelling-influenced bays; strong recruitment after El Niño events.",
+          "hotspots": [
+            [-29.9, -71.2, 0.7],  /* Coquimbo/La Serena */
+            [-13.7, -76.2, 0.6]   /* Pisco, Peru */
+          ],
+          "migrations": [
+            {
+              "name": "Spring–summer larval drift within bays",
+              "months": [9,10,11,12],
+              "path": [[-29.9,-71.2],[-29.7,-71.1],[-29.5,-71.0]]
+            }
+          ]
+        },
+        {
+          "common": "Antarctic Scallop",
+          "scientific": "Adamussium colbecki",
+          "fathomnetConcept": "Adamussium colbecki",
+          "family": "Pectinidae",
+          "regions": ["Antarctica coastal shelf (McMurdo, Ross Sea)"],
+          "monthsBest": ["Dec","Jan","Feb"],
+          "info": "Polar species on coarse sediment; limited adult movement.",
+          "hotspots": [
+            [-77.5, 166.4, 0.6]
+          ],
+          "migrations": []
+        }
+      ]
+    };
+  </script>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

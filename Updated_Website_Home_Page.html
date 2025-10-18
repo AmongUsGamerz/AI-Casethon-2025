@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Benthic Buddies</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Logo -->
+      <div class="flex items-center gap-3">
+        <img src="content.png" alt="Marine Science AI Logo" class="h-14 w-auto object-contain" />
+        <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+        <a href="Item Detection.html" class="hover:text-white">Photo Detection</a>
+        <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+        <a href="crab.html" class="hover:text-white">General Data</a>
+        <a href="#resources" class="hover:text-white">Links</a>
+        <a href="#contact" class="hover:text-white">Contact</a>
+      </nav>
+
+      <a href="#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">Contact</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute -top-40 -right-40 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 h-[30rem] w-[30rem] rounded-full bg-blue-500/10 blur-3xl"></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+      <!-- Text -->
+      <div>
+        <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">AI for Benthic Species ID</h1>
+        <p class="mt-4 text-slate-300 max-w-prose">
+          Open-source tooling to classify and detect benthic organisms in underwater imagery. Built for hackathons, labs, and field teams who need fast, reliable triage.
+        </p>
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <a href="Item Detection.html" class="rounded-2xl bg-cyan-500 px-5 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">Try Photo Detection</a>
+          <a href="Model Zoo.html" class="rounded-2xl border border-slate-700 px-5 py-2.5 font-medium hover:border-slate-500">Explore Model Zoo</a>
+          <a href="crab.html" class="rounded-2xl border border-cyan-500/50 px-5 py-2.5 font-medium text-cyan-300 hover:bg-cyan-500/10">See General Data</a>
+        </div>
+        <div class="mt-6 text-xs text-slate-400">
+          Tasks: Classification (7 species) · Detection (multi-object) · Offline-ready
+        </div>
+      </div>
+
+      <!-- Seamless Sliding Photos -->
+      <div class="relative overflow-hidden rounded-2xl border border-slate-800">
+        <div id="hero-carousel" class="flex transition-transform duration-700 ease-in-out">
+          <img src="https://nhpbs.org/wild/images/strippedpuffernoaaDavidBurdick.jpg" class="w-full flex-shrink-0 object-cover" />
+          <img src="https://nhpbs.org/wild/images/starfishnoaa.jpg" class="w-full flex-shrink-0 object-cover" />
+          <img src="https://nhpbs.org/wild/images/whiteseaanemonenoaa.jpg" class="w-full flex-shrink-0 object-cover" />
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_cxEuJ5vAL1CBf3x1-ODfbdB141EhnixLRw&s" class="w-full flex-shrink-0 object-cover" />
+          <img src="https://www.whoi.edu/wp-content/uploads/2019/12/Brisingid-sea-stars_Multimedia_HentzEdit-1200x675.jpg" class="w-full flex-shrink-0 object-cover" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- External Links Section -->
+  <section id="resources" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20">
+    <h2 class="text-3xl font-bold mb-6">Resources & External Links</h2>
+    <p class="text-slate-300 mb-6 max-w-prose">
+      Explore related projects, marine data repositories, and partner websites.
+    </p>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <a href="https://www.noaa.gov" target="_blank" class="block rounded-2xl border border-slate-800 p-6 bg-slate-900/50 hover:bg-slate-900/70 transition">
+        <h3 class="text-cyan-300 font-semibold mb-2">NOAA — National Oceanic & Atmospheric Administration</h3>
+        <p class="text-sm text-slate-400">Explore official data, marine monitoring tools, and educational resources.</p>
+      </a>
+
+      <a href="https://fathomnet.org" target="_blank" class="block rounded-2xl border border-slate-800 p-6 bg-slate-900/50 hover:bg-slate-900/70 transition">
+        <h3 class="text-cyan-300 font-semibold mb-2">FathomNet</h3>
+        <p class="text-sm text-slate-400">A growing open-source image database for ocean life used in AI training.</p>
+      </a>
+
+      <a href="https://ocean.si.edu" target="_blank" class="block rounded-2xl border border-slate-800 p-6 bg-slate-900/50 hover:bg-slate-900/70 transition">
+        <h3 class="text-cyan-300 font-semibold mb-2">Smithsonian Ocean Portal</h3>
+        <p class="text-sm text-slate-400">Dive deeper into marine science with curated articles and imagery.</p>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="contact" class="border-t border-slate-800 py-6">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-3">
+      <span>© <span id="year"></span> Benthic Buddies</span>
+      <div class="flex items-center gap-4">
+        <a class="hover:text-slate-300" href="#">Privacy</a>
+        <a class="hover:text-slate-300" href="#">Terms</a>
+        <a class="hover:text-slate-300" href="#">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ✅ Seamless Looping Carousel Script -->
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    const heroTrack = document.getElementById('hero-carousel');
+    const heroImages = heroTrack.children.length;
+    let heroIndex = 0;
+
+    // Clone the first image for smooth looping
+    const firstClone = heroTrack.children[0].cloneNode(true);
+    heroTrack.appendChild(firstClone);
+
+    function moveCarousel() {
+      heroIndex++;
+      heroTrack.style.transition = 'transform 0.7s ease-in-out';
+      heroTrack.style.transform = `translateX(-${heroIndex * 100}%)`;
+
+      if (heroIndex === heroImages) {
+        setTimeout(() => {
+          heroTrack.style.transition = 'none';
+          heroTrack.style.transform = 'translateX(0)';
+          heroIndex = 0;
+        }, 700); // match transition duration
+      }
+    }
+
+    setInterval(moveCarousel, 5000); // every 5 seconds
+  </script>
+</body>
+</html>

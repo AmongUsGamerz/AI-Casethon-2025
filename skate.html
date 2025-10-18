@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Species Info Viewer — Tabs + Map</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <link rel="stylesheet" href="assets/app.css" />
+</head>
+<body class="min-h-screen radial-bg text-slate-100">
+
+  <!-- Navbar (identical to index.html) -->
+<header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <!-- Left: Logo + Site Name -->
+    <div class="flex items-center gap-3">
+      <img
+        src="content.png"
+        alt="Marine Science AI Logo"
+        class="h-13 w-auto object-contain"
+        style="height: 70px;"
+      />
+      <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+    </div>
+
+    <!-- Center: nav links -->
+    <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+      <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+      <a href="Item Detection.html" class="hover:text-slate-white">Photo Detection</a>
+      <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+      <a href="crab.html" class="hover:text-white">General Data</a>
+    </nav>
+
+    <!-- Right: contact button -->
+    <a href="index.html#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">
+      Contact
+    </a>
+  </div>
+</header>
+
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl md:text-3xl font-semibold">Species Info Viewer</h1>
+    <p class="text-slate-300 mt-1">
+      This page shows species details after your model labels an image.
+      Call <code>window.setDetectedLabel(label)</code> from your AI pipeline to update the UI.
+    </p>
+
+    <div id="detectedBanner" class="mt-4 p-4 rounded-2xl bg-slate-800/70 ring-1 ring-slate-700 flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <div class="text-sm uppercase tracking-wide text-slate-400">Detected species</div>
+        <div id="detectedLabel" class="text-xl font-bold">—</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm text-slate-300" for="monthInput">Time of year:</label>
+        <input id="monthInput" type="range" min="1" max="12" value="6" class="w-48" />
+        <span id="monthLabel" class="text-sm font-medium tabular-nums w-16 inline-block text-center">Jun</span>
+      </div>
+      <div class="mt-3 text-xs text-slate-300 flex items-center gap-3">
+        <span class="uppercase tracking-wide text-slate-400">Data source</span>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcSample" type="radio" name="datasrc" class="accent-teal-400" checked>
+          <span>Sample</span>
+        </label>
+        <label class="inline-flex items-center gap-2">
+          <input id="srcFathomNet" type="radio" name="datasrc" class="accent-teal-400">
+          <span>FathomNet (live)</span>
+        </label>
+        <span id="srcStatus" class="ml-2 text-[11px] text-slate-400"></span>
+      </div>
+    </div>
+
+    <nav class="max-w-6xl mx-auto mt-6 flex gap-2 flex-wrap">
+      <a href="crab.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Crab</a>
+      <a href="eel.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Eel</a>
+      <a href="flatfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Flatfish</a>
+      <a href="roundfish.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Roundfish</a>
+      <a href="scallop.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Scallop</a>
+      <a href="skate.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-teal-500 text-black border-teal-400">Skate</a>
+      <a href="whelk.html" class="px-3 py-2 rounded-full text-sm font-semibold border bg-slate-800/70 border-slate-700 hover:bg-slate-700">Whelk</a>
+    </nav>
+
+    <div id="errBanner" class="hidden mt-3 p-3 rounded-xl bg-red-500/10 text-red-300 ring-1 ring-red-500/30 text-sm"></div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 pb-20">
+    <div id="typeGallery" class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+    <div id="noDataMsg" class="hidden mt-3 p-3 rounded-2xl bg-amber-500/10 text-amber-200 ring-1 ring-amber-500/30 text-sm"></div>
+
+    <section id="panel" class="mt-4 grid md:grid-cols-2 gap-4 hidden">
+      <article class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-4">
+        <h2 id="panelTitle" class="text-xl font-semibold">Select a species</h2>
+        <p id="panelDesc" class="mt-2 text-slate-300">
+          Skates (Order Rajiformes): bottom-dwelling cartilaginous fishes with seasonal
+          inshore/offshore shifts along continental shelves. Egg cases (“mermaid’s purses”)
+          hatch after bottom incubation; adults often track temperature and prey.
+        </p>
+        <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+          <div><div class="text-slate-400">Scientific name</div><div id="panelSci" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Family</div><div id="panelFamily" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Regions</div><div id="panelRegions" class="font-medium">—</div></div>
+          <div><div class="text-slate-400">Best months</div><div id="panelMonths" class="font-medium">—</div></div>
+        </div>
+      </article>
+
+      <div class="bg-slate-800/70 ring-1 ring-slate-700 rounded-2xl p-2">
+        <div id="map" class="h-[420px] w-full rounded-xl"></div>
+        <div class="px-2 py-2 text-xs text-slate-400">
+          Heat = high-density observations • Lines = seasonal movements (filtered by month)
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Data object consumed by assets/app.js -->
+  <script>
+    window.SPECIES_NAME = "Skate";
+    window.SPECIES_DATA = {
+      "description": "Major skate species with example hotspots and seasonal shelf movements.",
+      "types": [
+        {
+          "common": "Winter Skate",
+          "scientific": "Leucoraja ocellata",
+          "fathomnetConcept": "Leucoraja ocellata",
+          "family": "Rajidae",
+          "regions": ["NW Atlantic: Gulf of Maine, Georges Bank, Scotian Shelf"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug","Sep"],
+          "info": "Shelf-resident with inshore shifts in warm months.",
+          "hotspots": [[42.3,-67.0,0.7],[43.5,-65.0,0.6],[41.5,-66.0,0.6]],
+          "migrations": [
+            {"name":"Spring–summer inshore movement","months":[4,5,6,7,8,9],"path":[[42.3,-67.0],[42.1,-66.6],[41.9,-66.2]]}
+          ]
+        },
+        {
+          "common": "Little Skate",
+          "scientific": "Leucoraja erinacea",
+          "fathomnetConcept": "Leucoraja erinacea",
+          "family": "Rajidae",
+          "regions": ["NW Atlantic: Mid-Atlantic Bight to Gulf of Maine"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep","Oct"],
+          "info": "Common near sandy/gravel bottoms; seasonal depth changes.",
+          "hotspots": [[40.3,-73.8,0.7],[41.0,-71.6,0.6],[42.2,-70.8,0.6]],
+          "migrations": []
+        },
+        {
+          "common": "Thorny Skate",
+          "scientific": "Amblyraja radiata",
+          "fathomnetConcept": "Amblyraja radiata",
+          "family": "Rajidae",
+          "regions": ["N Atlantic cold shelf: Labrador–Barents Sea"],
+          "monthsBest": ["Jun","Jul","Aug","Sep"],
+          "info": "Cold-temperate; shifts across shelf with temperature.",
+          "hotspots": [[56.0,-52.0,0.6],[60.0,-20.0,0.6]],
+          "migrations": []
+        },
+        {
+          "common": "Barndoor Skate",
+          "scientific": "Dipturus laevis",
+          "fathomnetConcept": "Dipturus laevis",
+          "family": "Rajidae",
+          "regions": ["NW Atlantic: Mid-Atlantic to Scotian Shelf"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Large skate; low-density hotspots along outer shelf.",
+          "hotspots": [[39.5,-72.5,0.6],[41.2,-66.8,0.6],[43.7,-62.5,0.5]],
+          "migrations": [
+            {"name":"Summer along-shelf shift","months":[6,7,8,9],"path":[[41.2,-66.8],[41.6,-66.0],[42.0,-65.2]]}
+          ]
+        },
+        {
+          "common": "Clearnose Skate",
+          "scientific": "Rostroraja eglanteria",
+          "fathomnetConcept": "Rostroraja eglanteria",
+          "family": "Rajidae",
+          "regions": ["W Atlantic: Chesapeake–SE U.S. shelf"],
+          "monthsBest": ["Apr","May","Jun","Jul","Aug","Sep"],
+          "info": "Nearshore sand/shell hash; common in Mid-Atlantic in summer.",
+          "hotspots": [[37.0,-75.9,0.7],[34.7,-77.4,0.6],[30.0,-80.5,0.5]],
+          "migrations": [
+            {"name":"Warm-season inshore movement","months":[4,5,6,7,8,9],"path":[[37.0,-75.9],[36.6,-75.6],[36.2,-75.5]]}
+          ]
+        },
+        {
+          "common": "Common Skate (Blue Skate complex)",
+          "scientific": "Dipturus batis complex",
+          "fathomnetConcept": "Dipturus batis",
+          "family": "Rajidae",
+          "regions": ["NE Atlantic: Celtic & North Seas, W of Scotland, Irish shelf"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Large endangered complex; outer shelf/slope preference.",
+          "hotspots": [[56.5,-9.0,0.6],[54.5,-7.0,0.6],[58.0,-6.0,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Big Skate",
+          "scientific": "Beringraja binoculata",
+          "fathomnetConcept": "Beringraja binoculata",
+          "family": "Rajidae",
+          "regions": ["NE Pacific: Alaska–British Columbia–California"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Large NE Pacific skate; coastal to shelf habitats.",
+          "hotspots": [[49.3,-123.3,0.6],[37.7,-122.5,0.5],[58.3,-134.4,0.5]],
+          "migrations": []
+        },
+        {
+          "common": "Longnose Skate",
+          "scientific": "Raja rhina",
+          "fathomnetConcept": "Raja rhina",
+          "family": "Rajidae",
+          "regions": ["NE Pacific: Gulf of Alaska–California"],
+          "monthsBest": ["May","Jun","Jul","Aug","Sep"],
+          "info": "Shelf edge & upper slope; seasonal depth shifts.",
+          "hotspots": [[47.6,-124.8,0.6],[36.8,-122.7,0.5]],
+          "migrations": []
+        }
+      ]
+    };
+  </script>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>

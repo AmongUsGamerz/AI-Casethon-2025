@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Classification — Benthic Buddies</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <!-- ✅ Header -->
+  <header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Left: Logo + Site Name -->
+      <div class="flex items-center gap-3">
+        <img
+          src="content.png"
+          alt="Marine Science AI Logo"
+          class="h-14 w-auto object-contain"
+          style="height: 70px;"
+        />
+        <span class="font-semibold tracking-tight text-white"> Benthic Buddies</span>
+      </div>
+
+      <!-- Center: Nav Links (now centered visually) -->
+      <nav class="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-8 text-sm text-slate-300">
+        <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+        <a href="Item Detection.html" class="hover:text-white">Photo Detection</a>
+        <a href="Model Zoo.html" class="hover:text-white">Model Zoo</a>
+        <a href="crab.html" class="hover:text-white">General Data</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ✅ Photo Detection Section -->
+  <section id="demo" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
+    <div class="rounded-3xl border border-slate-800 p-6 md:p-8 bg-slate-900/50">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <h2 class="text-2xl md:text-3xl font-bold">Image Detection</h2>
+        <button onclick="submitJob()" id="btn-pick" class="rounded-2xl bg-cyan-500 px-4 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">
+          Upload an Image
+        </button>
+        <input id="file-input" type="file" accept="image/*" multiple class="hidden" />
+
+    <h2>Results:</h2>
+    <pre id="results-output">Awaiting submission...</pre>
+
+
+      </div>
+
+      <div id="demo-empty" class="mt-6 rounded-xl border border-dashed border-slate-700 p-8 text-center text-slate-400">
+        Drop an image here or click “Upload an Image” to begin.
+      </div>
+
+      <div id="demo-grid" class="mt-6 grid lg:grid-cols-3 md:grid-cols-2 gap-6 hidden">
+        <!-- Image preview -->
+        <div class="rounded-2xl overflow-hidden border border-slate-800">
+          <img id="img-preview" alt="Preview" class="w-full h-full object-cover" />
+        </div>
+
+        <!-- Info & Predictions -->
+        <div class="rounded-2xl border border-slate-800 p-4">
+          <div class="text-sm text-slate-400">Selected file</div>
+          <div id="file-name" class="text-sm font-medium">—</div>
+          <div class="mt-4 text-sm text-slate-300">Run on-device model to get species probabilities.</div>
+          <div id="pred-list" class="mt-4 grid grid-cols-2 gap-3 text-xs"></div>
+          <button id="btn-analyze" class="mt-4 rounded-2xl bg-cyan-500 px-4 py-2.5 font-medium text-slate-950 hover:bg-cyan-400">
+            Analyze
+          </button>
+        </div>
+
+        <!-- AI Description -->
+        <div class="rounded-2xl border border-slate-800 p-4 flex flex-col">
+          <div class="text-sm text-slate-400">AI Description</div>
+          <p id="ai-text" class="mt-2 text-sm text-slate-300 min-h-[4rem] whitespace-pre-wrap">
+            Click Analyze to generate a short species description based on the top prediction.
+          </p>
+          <div class="mt-auto flex gap-2">
+            <button id="btn-reanalyze" class="rounded-2xl border border-slate-700 px-3 py-2 text-sm hover:border-slate-500">Re-analyze</button>
+            <button id="btn-copy" disabled class="rounded-2xl px-3 py-2 text-sm bg-slate-800 text-slate-500 cursor-not-allowed">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ✅ Script -->
+  <script>
+    const btnPick = document.getElementById('btn-pick');
+    const fileInput = document.getElementById('file-input');
+    const demoEmpty = document.getElementById('demo-empty');
+    const demoGrid = document.getElementById('demo-grid');
+    const imgPreview = document.getElementById('img-preview');
+    const fileName = document.getElementById('file-name');
+    const predList = document.getElementById('pred-list');
+    const btnAnalyze = document.getElementById('btn-analyze');
+    const aiText = document.getElementById('ai-text');
+
+    let topPrediction = null;
+
+    // Upload and preview
+    btnPick.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      fileName.textContent = f.name;
+      const url = URL.createObjectURL(f);
+      imgPreview.src = url;
+      demoEmpty.classList.add('hidden');
+      demoGrid.classList.remove('hidden');
+      predList.innerHTML = '';
+      topPrediction = null;
+    });
+
+    // Demo predictions (mock)
+    const demoSpecies = ['Blue Crab','European Eel','Summer Flounder','Atlantic Cod','Japanese Eel','Dungeness Crab'];
+
+    function renderPredictions() {
+      predList.innerHTML = '';
+      const shuffled = demoSpecies.slice().sort(() => Math.random() - 0.5).slice(0, 4);
+      const preds = shuffled.map((name, i) => ({ name, prob: (0.55 - i * 0.1) }));
+      topPrediction = preds[0]?.name || null;
+      preds.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'rounded-xl border border-slate-800 p-3';
+        item.innerHTML = `<div class="font-medium">${p.name}</div><div class="text-slate-400 mt-1">${(p.prob * 100).toFixed(1)}%</div>`;
+        predList.appendChild(item);
+      });
+      aiText.textContent = topPrediction
+        ? `Top prediction: ${topPrediction}.`
+        : 'No prediction.';
+    }
+
+    btnAnalyze.addEventListener('click', renderPredictions);
+    document.getElementById('btn-reanalyze').addEventListener('click', renderPredictions);
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      if (!topPrediction) return;
+      navigator.clipboard.writeText(aiText.textContent);
+    });
+
+
+    const API_ENDPOINT = "YOUR_API_ENDPOINT/process_job/"; 
+
+    async function submitJob() {
+    const fileInput = document.getElementById('file-input');
+    const outputDiv = document.getElementById('results-output');
+    
+    // Check if files were selected
+    const files = fileInput.files;
+    if (files.length === 0) {
+        outputDiv.innerText = "Please select at least one image file.";
+        return;
+    }
+    
+    // --- 1. Construct FormData ---
+    // The API expects a List[UploadFile] under the key 'files', 
+    // so we must use FormData to send multipart data.
+    const formData = new FormData();
+    
+    // Since you can submit multiple, we loop through all selected files
+    // The key 'files' must match the parameter name in your FastAPI endpoint (@app.post("/process_job/", files: List[UploadFile] = File(...)))
+    for (const file of files) {
+        // Appends the file to the FormData object with the key 'files'
+        formData.append('files', file, file.name);
+    }
+    
+    // --- 2. Send Request and Handle Response ---
+    
+    outputDiv.innerText = "Processing started... (This may take time due to model loading/GPU warm-up)";
+    
+    try {
+        const response = await fetch(API_ENDPOINT, {
+            method: 'POST',
+            body: formData,
+            // NOTE: Do NOT set Content-Type header. The browser sets it automatically 
+            // to 'multipart/form-data' along with the required boundary string.
+        });
+
+        if (!response.ok) {
+            // Handle HTTP error status (e.g., 500, 404)
+            const errorText = await response.text();
+            outputDiv.innerText = `Error: API Request Failed! HTTP Status: ${response.status}\nDetails: ${errorText}`;
+            return;
+        }
+
+        const data = await response.json();
+        
+        // --- 3. Display Results ---
+        outputDiv.innerText = JSON.stringify(data, null, 2);
+        
+    } catch (error) {
+        // Handle network errors (e.g., CORS, connection refused)
+        outputDiv.innerText = `Network Error: Could not connect to the API.\nDetails: ${error.message}`;
+    }
+}
+    
+  </script>
+</body>
+</html>

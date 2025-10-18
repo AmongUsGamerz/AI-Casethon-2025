@@ -1,0 +1,14 @@
+/* Minor tweaks for nicer backgrounds */
+.radial-bg {
+  background:
+    radial-gradient(1200px 400px at 50% 10%, rgba(94,234,212,0.08), transparent),
+    #0b1220;
+}
+
+.shadow-soft {
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

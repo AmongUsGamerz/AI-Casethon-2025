@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Model Zoo — Benthic Buddies</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 backdrop-blur supports-[backdrop-filter]:bg-slate-950/60 bg-slate-950/80 border-b border-slate-800">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img src="../content.png" alt="Marine Science AI Logo" class="h-14 w-auto object-contain" />
+        <span class="font-semibold tracking-tight text-white">Benthic Buddies</span>
+      </div>
+
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a href="Updated_Website_Home_Page.html" class="hover:text-white">Home Page</a>
+        <a href="Item Detection.html" class="hover:text-white">Photo Detection</a>
+        <a href="Model Zoo.html" class="hover:text-white text-cyan-300">Model Zoo</a>
+        <a href="crab.html" class="hover:text-white">General Data</a>
+      </nav>
+
+      <a href="../index.html#contact" class="inline-flex items-center rounded-2xl border border-cyan-500/50 px-3 py-1.5 text-sm text-cyan-300 hover:bg-cyan-500/10">Contact</a>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute -top-40 -right-40 h-[30rem] w-[30rem] rounded-full bg-cyan-500/10 blur-3xl"></div>
+    <div class="absolute -bottom-40 -left-40 h-[30rem] w-[30rem] rounded-full bg-blue-500/10 blur-3xl"></div>
+
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 md:py-24 text-center">
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight">Model Zoo</h1>
+      <p class="mt-4 text-slate-300 max-w-2xl mx-auto">
+        Interactive species gallery with featured photos and quick ID facts. Click a species to update the
+        panel with habitat, size, cues, and more.
+      </p>
+    </div>
+  </section>
+
+  <!-- Photo Lab — repurposed as Model Zoo -->
+  <section id="photo-lab" class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-14">
+    <div class="rounded-3xl border border-slate-800 p-6 md:p-8 bg-slate-900/50">
+      <div class="flex items-center justify-between gap-4 flex-wrap">
+        <h2 class="text-2xl md:text-3xl font-bold">Species Gallery</h2>
+        <div class="text-xs text-slate-400">Tip: Click a species to see its featured photo and info.</div>
+      </div>
+
+      <!-- Two-column layout -->
+      <div class="mt-6 grid md:grid-cols-2 gap-6 items-start">
+        <!-- Left: hero photo -->
+        <div class="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950">
+          <img
+            id="photo-hero"
+            src="https://utmsi.utexas.edu/wp-content/uploads/2024/10/SATS-176-shore-crabs-amazing-website.jpg"
+            alt="Selected species photo"
+            class="w-full h-[420px] object-cover"
+          />
+          <div class="p-4 text-center text-slate-400 text-xs bg-slate-900/60 border-t border-slate-800">
+            Main photo <span id="photo-credit" class="text-slate-500">· UTMSI</span>
+          </div>
+        </div>
+
+        <!-- Right: info panel -->
+        <div class="rounded-2xl border border-slate-800 p-4">
+          <div class="text-sm text-slate-400">Selected species</div>
+          <div id="photo-name" class="text-xl font-semibold">Crab</div>
+          <p id="photo-blurb" class="mt-2 text-sm text-slate-300">
+            Found on seafloors and in shallow coastal waters worldwide; protected by a hard exoskeleton and armed with claws for feeding and defense.
+          </p>
+
+          <div id="photo-facts" class="mt-4 grid grid-cols-2 gap-3 text-xs">
+            <div class="rounded-xl border border-slate-800 p-3">
+              <div class="text-slate-400">Typical habitat</div>
+              <div>Seafloor, intertidal zone</div>
+            </div>
+            <div class="rounded-xl border border-slate-800 p-3">
+              <div class="text-slate-400">Size</div>
+              <div>1–30 cm carapace width</div>
+            </div>
+            <div class="rounded-xl border border-slate-800 p-3">
+              <div class="text-slate-400">ID cues</div>
+              <div>Claws, hard shell, sideways gait</div>
+            </div>
+            <div class="rounded-xl border border-slate-800 p-3">
+              <div class="text-slate-400">IUCN</div>
+              <div>Varies by species (many Not Evaluated)</div>
+            </div>
+          </div>
+
+          <!-- Species chooser -->
+          <div class="mt-6">
+            <div class="text-sm text-slate-400 mb-2">Choose a species</div>
+            <div id="photo-buttons" class="flex flex-wrap gap-2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Same species dataset as the original Photo Lab section
+      const speciesPhotos = {
+        Crab: [{
+          src: "https://utmsi.utexas.edu/wp-content/uploads/2024/10/SATS-176-shore-crabs-amazing-website.jpg",
+          credit: "UTMSI",
+          blurb: "Found on seafloors and in shallow coastal waters worldwide; protected by a hard exoskeleton and armed with claws for feeding and defense.",
+          habitat: "Seafloor, intertidal zone",
+          size: "1–30 cm carapace width",
+          cues: "Claws, hard shell, sideways gait",
+          iucn: "Varies by species (many Not Evaluated)"
+        }],
+        Eel: [{
+          src: "https://www.seattleaquarium.org/wp-content/uploads/2024/06/Moray-eel-3.jpg",
+          credit: "Seattle Aquarium",
+          blurb: "Elongate fish found in reefs, estuaries, and rivers; nocturnal predators with serpentine swimming.",
+          habitat: "Reefs, estuaries, rivers",
+          size: "Up to 3 meters",
+          cues: "Snake-like body, continuous fin",
+          iucn: "Varies by species"
+        }],
+        Scallop: [{
+          src: "https://media.sciencephoto.com/image/z5000063/800wm/Z5000063.jpg",
+          credit: "Science Photo Library",
+          blurb: "Bivalve mollusks capable of swimming by clapping their shells together; often found on sandy seafloors.",
+          habitat: "Sandy seafloor",
+          size: "Up to 20 cm shell width",
+          cues: "Fan-shaped shell with ridges",
+          iucn: "Not Evaluated"
+        }],
+        Roundfish: [{
+          src: "https://www.directseafoods.co.uk/wp-content/uploads/black-bream.jpg",
+          credit: "Direct Seafoods (Black Bream)",
+          blurb: "Includes bream and cod-like species with round cross-sections; common in open waters.",
+          habitat: "Open ocean and reefs",
+          size: "30–60 cm typical",
+          cues: "Rounded body, symmetrical tail",
+          iucn: "Least Concern"
+        }],
+        Whelk: [{
+          src: "https://www.devonwildlifetrust.org/sites/default/files/styles/large/public/2018-02/wildlifetrusts_40334021777.jpg?itok=nLwk2_12",
+          credit: "Devon Wildlife Trust",
+          blurb: "Large marine snails that inhabit cold-water sandy or muddy areas, known for spiral shells.",
+          habitat: "Sandy and muddy seabeds",
+          size: "5–12 cm shell length",
+          cues: "Spiral shell, pointed apex",
+          iucn: "Not Evaluated"
+        }],
+        Skate: [{
+          src: "https://a-z-animals.com/media/skatefishoceanfloor-1-1024x557.jpg",
+          credit: "A-Z Animals",
+          blurb: "Flattened cartilaginous fish related to rays, gliding along the seafloor using wing-like fins.",
+          habitat: "Seafloor, deep and shallow zones",
+          size: "Up to 2.5 meters",
+          cues: "Flat body, long tail, wing-like fins",
+          iucn: "Many species Near Threatened"
+        }],
+        Flatfish: [{
+          src: "https://westcorkpeople.ie/wp-content/uploads/2024/01/jeremy1.jpg",
+          credit: "West Cork People",
+          blurb: "Bottom-dwelling fish that lie on one side with both eyes on top; includes flounder and sole.",
+          habitat: "Sandy seafloor, coastal shallows",
+          size: "Up to 50 cm",
+          cues: "Flat body, both eyes on one side",
+          iucn: "Least Concern"
+        }]
+      };
+
+      const hero = document.getElementById("photo-hero");
+      const nameEl = document.getElementById("photo-name");
+      const blurbEl = document.getElementById("photo-blurb");
+      const factsEl = document.getElementById("photo-facts");
+      const creditEl = document.getElementById("photo-credit");
+      const buttons = document.getElementById("photo-buttons");
+
+      function renderButtons() {
+        buttons.innerHTML = "";
+        Object.keys(speciesPhotos).forEach((species) => {
+          const btn = document.createElement("button");
+          btn.className = "rounded-xl border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-800/50";
+          btn.textContent = species;
+          btn.onclick = () => updateSpecies(species);
+          buttons.appendChild(btn);
+        });
+      }
+
+      function updateSpecies(name) {
+        const data = speciesPhotos[name][0];
+        hero.src = data.src;
+        creditEl.textContent = `· ${data.credit}`;
+        nameEl.textContent = name;
+        blurbEl.textContent = data.blurb;
+        factsEl.innerHTML = `
+          <div class="rounded-xl border border-slate-800 p-3">
+            <div class="text-slate-400">Typical habitat</div>
+            <div>${data.habitat}</div>
+          </div>
+          <div class="rounded-xl border border-slate-800 p-3">
+            <div class="text-slate-400">Size</div>
+            <div>${data.size}</div>
+          </div>
+          <div class="rounded-xl border border-slate-800 p-3">
+            <div class="text-slate-400">ID cues</div>
+            <div>${data.cues}</div>
+          </div>
+          <div class="rounded-xl border border-slate-800 p-3">
+            <div class="text-slate-400">IUCN</div>
+            <div>${data.iucn}</div>
+          </div>`;
+      }
+
+      renderButtons();
+      // Ensure UI state matches the default hero on load
+      updateSpecies("Crab");
+    </script>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 py-6">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-3">
+      <span>© <span id="year"></span> > Benthic Buddies</span>
+      <div class="flex items-center gap-4">
+        <a class="hover:text-slate-300" href="#">Privacy</a>
+        <a class="hover:text-slate-300" href="#">Terms</a>
+        <a class="hover:text-slate-300" href="#">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
